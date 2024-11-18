@@ -5,7 +5,6 @@ const userSchema = new mongoose.Schema({
   name: String,
   username: {
     type: String,
-    required: true,
     unique: true,
   },
   email: {
@@ -38,9 +37,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 userSchema.methods.getSignedJwtToken = function () {
-  return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
-  });
+  return jwt.sign(
+    { id: this._id, email: this.email, role: this.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRE,
+    }
+  );
 };
 
 const User = mongoose.model("User", userSchema);
