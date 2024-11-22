@@ -1,12 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+
 const userSchema = new mongoose.Schema({
   name: String,
-  username: {
-    type: String,
-    unique: true,
-  },
+  username: String,
   email: {
     type: String,
     required: true,

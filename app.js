@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import errorHandler from "./middlewares/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
+import classRoutes from "./routes/classRoutes.js";
 const app = express();
 
 app.use(express.json());
@@ -12,6 +13,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1", authRoutes);
+app.use("/api/v1/class", classRoutes);
 
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);

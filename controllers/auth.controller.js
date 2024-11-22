@@ -1,10 +1,19 @@
-import { createUser, getUserByEmail } from "../services/auth.service.js";
+import {
+  createUser,
+  getAllTeachersService,
+  getUserByEmail,
+} from "../services/auth.service.js";
 
 const signup = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
-
-    const newUser = await createUser({ email, password, role });
+    console.log(email, password, role);
+    const newUser = await createUser({
+      email,
+      password,
+      role,
+      username: email.split("@")[0],
+    });
 
     res.status(201).json(newUser);
   } catch (error) {
@@ -41,4 +50,13 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-export default { signup, login, verifyToken };
+const getAllTeachers = async (req, res, next) => {
+  try {
+    const teachers = await getAllTeachersService();
+    res.status(200).json(teachers);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { signup, login, verifyToken, getAllTeachers };

@@ -17,3 +17,12 @@ export const getUserByEmail = async (email) => {
     throw new Error("Error finding user");
   }
 };
+
+export const getAllTeachersService = async () => {
+  try {
+    const teachers = await User.find({ role: "teacher" }).select("-password");
+    return teachers;
+  } catch (error) {
+    throw new Error("Error finding teachers");
+  }
+};
