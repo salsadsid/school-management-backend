@@ -1,3 +1,4 @@
+import Student from "../models/Student.js";
 import User from "../models/User.js";
 
 export const createUser = async (user) => {
@@ -24,5 +25,14 @@ export const getAllTeachersService = async () => {
     return teachers;
   } catch (error) {
     throw new Error("Error finding teachers");
+  }
+};
+
+export const createNewStudentService = async (studentData) => {
+  try {
+    const newStudent = await Student.create(studentData);
+    return newStudent;
+  } catch (error) {
+    throw new Error("Error creating student");
   }
 };
