@@ -59,19 +59,4 @@ const getAllTeachers = async (req, res, next) => {
   }
 };
 
-const createStudent = async (req, res, next) => {
-  try {
-    const { name, roll, password, classId } = req.body;
-    const newStudent = await createNewStudentService({
-      name,
-      password,
-      roll,
-      class: classId,
-    });
-    res.status(201).json(newStudent);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export default { signup, login, verifyToken, getAllTeachers, createStudent };
+export default { signup, login, verifyToken, getAllTeachers };

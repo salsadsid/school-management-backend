@@ -16,12 +16,32 @@ export const getAllClassesService = async () => {
 
 export const createNewClassService = async (classData) => {
   try {
-    const newClass = (await Class.create(classData)).populate({
-      path: "teacher",
-      select: "-password",
-    });
+    const newClass = (await Class.create(classData)).populate(
+      {
+        path: "teacher",
+        select: "-password",
+      },
+      {
+        path: "students",
+        select: "-password",
+      }
+    );
     return newClass;
   } catch (error) {
     throw new Error("Error creating class");
+  }
+};
+
+export const addStudentToClassService = async (studentId, classId) => {
+  try {
+    await Class.updateOne({ _id: classId }, { $push: { students: studentId } });
+    const updatedClass = await Class.findById(classId).populate({
+      path: "students",
+      select: "-password",
+    });
+    return updatedClass;
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error adding student to class");
   }
 };
