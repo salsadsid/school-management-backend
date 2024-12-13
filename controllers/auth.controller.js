@@ -2,6 +2,7 @@ import {
   createUser,
   getAllTeachersService,
   getUserByEmail,
+  getUserByStudentId,
 } from "../services/auth.service.js";
 
 const signup = async (req, res, next) => {
@@ -22,9 +23,14 @@ const signup = async (req, res, next) => {
 };
 
 const login = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email = " ", password, studentId = "" } = req.body;
   try {
-    const user = await getUserByEmail(email);
+    let user;
+    if (studentId) {
+      user = await getUserByStudentId(studentId);
+    } else {
+      user = await getUserByEmail(email);
+    }
     // console.log(user);
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: "Invalid credentials" });

@@ -19,3 +19,12 @@ export const getAllStudentsService = async () => {
     throw new Error("Error finding students");
   }
 };
+
+export const getStudentByIdService = async (studentId) => {
+  try {
+    const student = await Student.findOne({ studentId });
+    return student;
+  } catch (error) {
+    throw new Error("Error finding student");
+  }
+};

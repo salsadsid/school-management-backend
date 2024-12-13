@@ -7,8 +7,17 @@ const userSchema = new mongoose.Schema({
   username: String,
   email: {
     type: String,
-    required: true,
+    required: function () {
+      return this.role !== "student";
+    },
     unique: true,
+  },
+  studentId: {
+    type: String,
+    unique: true,
+    required: function () {
+      return this.role === "student";
+    },
   },
   password: {
     type: String,
@@ -19,6 +28,14 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "superadmin", "teacher", "student", "parent", "moderator"],
     default: "student",
     required: true,
+  },
+  details: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "roleDetails",
+  },
+  roleDetails: {
+    type: String,
+    enum: ["UserDetails", "Student"],
   },
 });
 
@@ -35,13 +52,22 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 userSchema.methods.getSignedJwtToken = function () {
-  return jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRE,
-    }
-  );
+  const isStudent = this.role === "student";
+  return isStudent
+    ? jwt.sign(
+        { id: this._id, studentId: this.studentId, role: this.role },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: process.env.JWT_EXPIRE,
+        }
+      )
+    : jwt.sign(
+        { id: this._id, email: this.email, role: this.role },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: process.env.JWT_EXPIRE,
+        }
+      );
 };
 
 const User = mongoose.model("User", userSchema);

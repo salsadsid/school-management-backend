@@ -26,3 +26,12 @@ export const getAllTeachersService = async () => {
     throw new Error("Error finding teachers");
   }
 };
+
+export const getUserByStudentId = async (studentId) => {
+  try {
+    const user = await User.findOne({ studentId });
+    return user;
+  } catch (error) {
+    throw new Error("Error finding user");
+  }
+};

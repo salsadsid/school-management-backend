@@ -2,6 +2,7 @@ import { addStudentToClassService } from "../services/class.service.js";
 import {
   createNewStudentService,
   getAllStudentsService,
+  getStudentByIdService,
 } from "../services/student.service.js";
 
 const createStudent = async (req, res, next) => {
@@ -17,7 +18,7 @@ const createStudent = async (req, res, next) => {
 
     await addStudentToClassService(newStudent._id, classId);
 
-    res.status(201).json(newStudent);
+    await res.status(201).json(newStudent);
   } catch (error) {
     next(error);
   }
@@ -32,4 +33,24 @@ const getAllStudents = async (req, res, next) => {
   }
 };
 
-export default { createStudent, getAllStudents };
+const getStudentById = async (req, res, next) => {
+  try {
+    const { studentId, password } = req.body;
+    console.log(studentId, password);
+    const student = await getStudentByIdService(studentId);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // if (!student.matchPassword(password)) {
+    //   return res.status(401).json({ message: "Invalid credentials" });
+    // }
+
+    res.status(200).json(student);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { createStudent, getAllStudents, getStudentById };
