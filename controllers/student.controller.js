@@ -1,6 +1,6 @@
 import { addStudentToClassService } from "../services/class.service.js";
 import {
-  createNewStudentService,
+  createNewStudentandNewUserService,
   getAllStudentsService,
   getStudentByIdService,
 } from "../services/student.service.js";
@@ -9,7 +9,7 @@ const createStudent = async (req, res, next) => {
   try {
     const { name, studentId, password, classId } = req.body;
     console.log(name, studentId, password, classId);
-    const newStudent = await createNewStudentService({
+    const newStudent = await createNewStudentandNewUserService({
       name,
       password,
       studentId,
