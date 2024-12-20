@@ -33,7 +33,9 @@ const login = async (req, res, next) => {
     }
     // console.log(user);
     if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ message: "Email or password is incorrect." });
     }
     const token = user.getSignedJwtToken();
     res.status(200).json({ token });

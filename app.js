@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import errorHandler from "./middlewares/errorMiddleware.js";
+import admissionInfoRoutes from "./routes/admissionInfoRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
@@ -17,6 +18,8 @@ app.use("/api/v1", authRoutes);
 app.use("/api/v1/class", classRoutes);
 
 app.use("/api/v1/student", studentRoutes);
+
+app.use("/api/v1/admission", admissionInfoRoutes);
 
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
