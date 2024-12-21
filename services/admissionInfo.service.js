@@ -28,3 +28,14 @@ export const getAnAdmissionInfoService = async (id) => {
     throw new Error("Error finding admission info");
   }
 };
+
+export const deleteAnAdmissionInfoService = async (id) => {
+  try {
+    const admissionInfo = await AdmissionInfomation.findOneAndDelete({
+      applicationId: id,
+    });
+    return admissionInfo;
+  } catch (error) {
+    throw new Error("Error deleting admission info");
+  }
+};
