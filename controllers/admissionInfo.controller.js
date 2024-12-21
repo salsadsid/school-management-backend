@@ -1,6 +1,7 @@
 import {
   addAdmissionInfoService,
   getAllAdmissionInfoService,
+  getAnAdmissionInfoService,
 } from "../services/admissionInfo.service.js";
 
 const addAdmissionInfo = async (req, res, next) => {
@@ -21,4 +22,15 @@ const getAllAdmissionInfo = async (req, res, next) => {
   }
 };
 
-export default { addAdmissionInfo, getAllAdmissionInfo };
+const getAnAdmissionInfo = async (req, res, next) => {
+  try {
+    const applicationId = req.params.id;
+    console.log(applicationId);
+    const admissionInfo = await getAnAdmissionInfoService(applicationId);
+    res.status(200).json(admissionInfo);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { addAdmissionInfo, getAllAdmissionInfo, getAnAdmissionInfo };

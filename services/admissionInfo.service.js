@@ -17,3 +17,14 @@ export const getAllAdmissionInfoService = async () => {
     throw new Error("Error finding admission info");
   }
 };
+
+export const getAnAdmissionInfoService = async (id) => {
+  try {
+    const admissionInfo = await AdmissionInfomation.findOne({
+      applicationId: id,
+    });
+    return admissionInfo;
+  } catch (error) {
+    throw new Error("Error finding admission info");
+  }
+};
