@@ -72,7 +72,7 @@ const admissionInfomationSchema = new mongoose.Schema(
     weight: {
       type: String,
     },
-    idendificationMark: {
+    identificationMark: {
       type: String,
     },
     presentAddress: {
@@ -90,7 +90,7 @@ const admissionInfomationSchema = new mongoose.Schema(
     relationWithEmergencyContact: {
       type: String,
     },
-    previousInstution: {
+    previousInstitution: {
       type: String,
     },
   },
