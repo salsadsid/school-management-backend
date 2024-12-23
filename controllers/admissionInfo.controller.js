@@ -3,6 +3,7 @@ import {
   deleteAnAdmissionInfoService,
   getAllAdmissionInfoService,
   getAnAdmissionInfoService,
+  updateAnAdmissionInfoService,
 } from "../services/admissionInfo.service.js";
 
 const addAdmissionInfo = async (req, res, next) => {
@@ -44,9 +45,23 @@ const deleteAnAdmissionInfo = async (req, res, next) => {
   }
 };
 
+const updateAnAdmissionInfo = async (req, res, next) => {
+  try {
+    const applicationId = req.params.id;
+    const admissionInfo = await updateAnAdmissionInfoService(
+      applicationId,
+      req.body
+    );
+    res.status(200).json(admissionInfo);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   addAdmissionInfo,
   getAllAdmissionInfo,
   getAnAdmissionInfo,
   deleteAnAdmissionInfo,
+  updateAnAdmissionInfo,
 };

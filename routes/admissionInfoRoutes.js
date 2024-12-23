@@ -3,6 +3,7 @@ import admissionInfoController from "../controllers/admissionInfo.controller.js"
 const router = express.Router();
 
 router.get("/:id", admissionInfoController.getAnAdmissionInfo);
+router.patch("/:id", admissionInfoController.updateAnAdmissionInfo);
 router.get("/", admissionInfoController.getAllAdmissionInfo);
 router.post("/", admissionInfoController.addAdmissionInfo);
 router.delete("/:id", admissionInfoController.deleteAnAdmissionInfo);

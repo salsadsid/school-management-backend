@@ -96,6 +96,12 @@ const admissionInfomationSchema = new mongoose.Schema(
     previousInstitution: {
       type: String,
     },
+    status: {
+      type: String,
+      default: "pending",
+      enum: ["pending", "approved", "rejected"],
+      required: true,
+    },
   },
   {
     timestamps: true,

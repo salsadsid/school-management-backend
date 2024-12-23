@@ -39,3 +39,16 @@ export const deleteAnAdmissionInfoService = async (id) => {
     throw new Error("Error deleting admission info");
   }
 };
+
+export const updateAnAdmissionInfoService = async (id, admissionData) => {
+  try {
+    const admissionInfo = await AdmissionInfomation.findOneAndUpdate(
+      { applicationId: id },
+      admissionData,
+      { new: false }
+    );
+    return admissionInfo;
+  } catch (error) {
+    throw new Error("Error updating admission info");
+  }
+};
