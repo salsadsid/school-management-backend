@@ -26,6 +26,9 @@ const admissionInfomationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    group: {
+      type: String,
+    },
     session: {
       type: String,
       required: true,
