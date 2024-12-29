@@ -7,13 +7,13 @@ import {
 
 const signup = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
-    console.log(email, password, role);
+    const { email, password, role, name } = req.body;
+
     const newUser = await createUser({
       email,
       password,
       role,
-      username: email.split("@")[0],
+      name,
     });
 
     res.status(201).json(newUser);

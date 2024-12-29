@@ -1,24 +1,33 @@
 import { addStudentToClassService } from "../services/class.service.js";
+import { addStudentToSectionService } from "../services/section.service.js";
 import {
-  createNewStudentandNewUserService,
+  createUserAndStudentService,
   getAllStudentsService,
   getStudentByIdService,
 } from "../services/student.service.js";
 
 const createStudent = async (req, res, next) => {
   try {
-    const { name, studentId, password, classId } = req.body;
-    console.log(name, studentId, password, classId);
-    const newStudent = await createNewStudentandNewUserService({
-      name,
-      password,
-      studentId,
-      class: classId,
+    const { classId, section } = req.body;
+    // console.log(name, studentId, password, classId);
+    // console.log(req.body);
+    const newStudent = await createUserAndStudentService(req.body);
+    // console.log(newStudent);
+    const updatedClass = await addStudentToClassService(
+      newStudent.student._id,
+      classId
+    );
+    const updatedSection = await addStudentToSectionService(
+      newStudent.student._id,
+      section
+    );
+
+    await res.status(201).json({
+      message: "Student created successfully",
+      student: newStudent,
+      class: updatedClass,
+      section: updatedSection,
     });
-
-    await addStudentToClassService(newStudent._id, classId);
-
-    await res.status(201).json(newStudent);
   } catch (error) {
     next(error);
   }
@@ -26,7 +35,8 @@ const createStudent = async (req, res, next) => {
 
 const getAllStudents = async (req, res, next) => {
   try {
-    const students = await getAllStudentsService();
+    const { classId = null, section = null } = req.query;
+    const students = await getAllStudentsService({ classId, section });
     res.status(200).json(students);
   } catch (error) {
     next(error);
@@ -36,7 +46,7 @@ const getAllStudents = async (req, res, next) => {
 const getStudentById = async (req, res, next) => {
   try {
     const { studentId, password } = req.body;
-    console.log(studentId, password);
+    // console.log(studentId, password);
     const student = await getStudentByIdService(studentId);
 
     if (!student) {

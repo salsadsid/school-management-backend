@@ -16,18 +16,11 @@ export const getAllClassesService = async () => {
 
 export const createNewClassService = async (classData) => {
   try {
-    const newClass = (await Class.create(classData)).populate(
-      {
-        path: "teacher",
-        select: "-password",
-      },
-      {
-        path: "students",
-        select: "-password",
-      }
-    );
+    // console.log(classData);
+    const newClass = await Class.create(classData);
     return newClass;
   } catch (error) {
+    console.log(error);
     throw new Error("Error creating class");
   }
 };

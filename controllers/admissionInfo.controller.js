@@ -27,7 +27,6 @@ const getAllAdmissionInfo = async (req, res, next) => {
 const getAnAdmissionInfo = async (req, res, next) => {
   try {
     const applicationId = req.params.id;
-    console.log(applicationId);
     const admissionInfo = await getAnAdmissionInfoService(applicationId);
     res.status(200).json(admissionInfo);
   } catch (error) {

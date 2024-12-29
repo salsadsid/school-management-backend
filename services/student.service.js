@@ -1,28 +1,65 @@
 import Student from "../models/Student.js";
 import User from "../models/User.js";
 
-export const createNewStudentandNewUserService = async (studentData) => {
+import mongoose from "mongoose";
+
+export const createUserAndStudentService = async (studentData) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    console.log(studentData, "studentData");
-    const newStudent = await Student.create(studentData);
-    const newUser = await User.create({
-      ...studentData,
-      username: studentData.name.replace(/\s+/g, ""),
-      role: "student",
-      details: newStudent._id,
-      roleDetails: "Student",
-    });
-    console.log(newUser, "newUser");
-    return newStudent;
+    // Step 1: Create the User
+    const newUser = await User.create(
+      [
+        {
+          name: studentData.name,
+          studentId: studentData.studentId,
+          password: studentData.password,
+          role: "student",
+          roleDetails: "Student", // This indicates it's linked to a student
+        },
+      ],
+      { session }
+    );
+
+    // Step 2: Create the Student with the user's _id as userId
+    const newStudent = await Student.create(
+      [
+        {
+          ...studentData,
+          userId: newUser[0]._id, // Linking the userId
+        },
+      ],
+      { session }
+    );
+
+    newUser[0].details = newStudent[0]._id;
+    await newUser[0].save({ session });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    return { user: newUser[0], student: newStudent[0] };
   } catch (error) {
-    console.log(error);
-    throw new Error("Error creating student");
+    await session.abortTransaction();
+    session.endSession();
+    throw new Error(`Error creating user and student: ${error.message}`);
   }
 };
 
-export const getAllStudentsService = async () => {
+export const getAllStudentsService = async ({
+  classId = null,
+  section = null,
+}) => {
   try {
-    const students = await Student.find().populate("class");
+    const filter = {};
+    if (classId) filter.classId = classId;
+    if (section) filter.section = section;
+
+    // Fetch students based on the filter
+    const students = await Student.find(filter).populate("classId section");
+
     return students;
   } catch (error) {
     throw new Error("Error finding students");

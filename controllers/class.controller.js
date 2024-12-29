@@ -5,11 +5,11 @@ import {
 
 const createNewClass = async (req, res, next) => {
   try {
-    const { name, teacherId } = req.body;
+    const { name, teacher } = req.body;
     // console.log(name, teacherId);
     const newClass = await createNewClassService({
       name,
-      teacher: teacherId,
+      teacher,
     });
     res.status(201).json(newClass);
   } catch (error) {

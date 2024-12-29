@@ -2,43 +2,67 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  name: String,
-  username: String,
-  email: {
-    type: String,
-    required: function () {
-      return this.role !== "student";
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: {
+      type: String,
+      required: function () {
+        return this.role !== "student";
+      },
+      unique: function () {
+        return this.role !== "student";
+      },
+      validate: {
+        validator: function (email) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        message: "Please provide a valid email address",
+      },
+      sparse: true,
     },
-    unique: true,
-  },
-  studentId: {
-    type: String,
-    unique: true,
-    required: function () {
-      return this.role === "student";
+    studentId: {
+      type: String,
+      unique: function () {
+        return this.role === "student";
+      },
+      required: function () {
+        return this.role === "student";
+      },
+      sparse: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: [
+        "admin",
+        "superadmin",
+        "teacher",
+        "student",
+        "parent",
+        "moderator",
+      ],
+      default: "student",
+      required: true,
+    },
+    details: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "roleDetails",
+    },
+    roleDetails: {
+      type: String,
+      enum: ["Teacher", "Student"],
     },
   },
-  password: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    enum: ["admin", "superadmin", "teacher", "student", "parent", "moderator"],
-    default: "student",
-    required: true,
-  },
-  details: {
-    type: mongoose.Schema.Types.ObjectId,
-    refPath: "roleDetails",
-  },
-  roleDetails: {
-    type: String,
-    enum: ["UserDetails", "Student"],
-  },
-});
+  {
+    timestamps: true, // Automatically add createdAt and updatedAt fields
+  }
+);
 
+// Middleware to hash password before saving
 userSchema.pre("save", async function (next) {
   const user = this;
   if (user.isModified("password")) {
@@ -47,27 +71,21 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+// Method to compare passwords
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Method to generate JWT
 userSchema.methods.getSignedJwtToken = function () {
-  const isStudent = this.role === "student";
-  return isStudent
-    ? jwt.sign(
-        { id: this._id, studentId: this.studentId, role: this.role },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: process.env.JWT_EXPIRE,
-        }
-      )
-    : jwt.sign(
-        { id: this._id, email: this.email, role: this.role },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: process.env.JWT_EXPIRE,
-        }
-      );
+  const payload =
+    this.role === "student"
+      ? { id: this._id, studentId: this.studentId, role: this.role }
+      : { id: this._id, email: this.email, role: this.role };
+
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE,
+  });
 };
 
 const User = mongoose.model("User", userSchema);
