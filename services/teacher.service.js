@@ -2,9 +2,7 @@ import Teacher from "../models/Teacher.js";
 
 // Get all teachers
 export const getAllTeachers = async () => {
-  return await Teacher.find().populate(
-    "userId subjects.subjectId subjects.classes"
-  );
+  return await Teacher.find().populate("userId");
 };
 
 // Create a new teacher

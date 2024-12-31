@@ -1,11 +1,10 @@
 import User from "../models/User.js";
 
-export const createUser = async (user) => {
+export const createUser = async (user, session) => {
   try {
-    const createdUser = await User.create(user);
-    return createdUser;
+    const createdUser = await User.create([user], { session }); // Use the session
+    return createdUser[0]; // User.create returns an array when using sessions
   } catch (error) {
-    // console.log(error);
     throw new Error("Error creating account");
   }
 };

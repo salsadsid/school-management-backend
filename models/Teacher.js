@@ -6,6 +6,15 @@ const teacherSchema = new mongoose.Schema({
     ref: "User", // Reference to the User model
     required: true,
   },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
   subjects: [
     {
       subjectId: {
@@ -20,12 +29,12 @@ const teacherSchema = new mongoose.Schema({
       ],
     },
   ],
-  designation: { type: String, required: true }, // e.g., "Senior Teacher"
-  contactNumber: { type: String, required: true },
+  designation: { type: String }, // e.g., "Senior Teacher"
+  contactNumber: { type: String },
   address: { type: String }, // Optional field
   joiningDate: { type: Date, default: Date.now },
 });
 
 const Teacher = mongoose.model("Teacher", teacherSchema);
 
-module.exports = Teacher;
+export default Teacher;

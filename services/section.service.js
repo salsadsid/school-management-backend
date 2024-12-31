@@ -6,11 +6,10 @@ export const getAllSections = async () => {
 };
 
 // Create a new section
-export const createSection = async (sectionData) => {
+export const createSection = async (sectionData, session) => {
   const section = new Section(sectionData);
-  return await section.save();
+  return await section.save({ session }); // Save the section within the transaction
 };
-
 // Update a section
 export const updateSection = async (sectionId, updateData) => {
   return await Section.findByIdAndUpdate(sectionId, updateData, { new: true });

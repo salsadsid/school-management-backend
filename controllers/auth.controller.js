@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+import Teacher from "../models/Teacher.js";
+import User from "../models/User.js";
 import {
   createUser,
   getAllTeachersService,
@@ -6,18 +9,62 @@ import {
 } from "../services/auth.service.js";
 
 const signup = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    const { email, password, role, name } = req.body;
-
-    const newUser = await createUser({
+    const {
       email,
       password,
-      role,
       name,
-    });
+      designation,
+      contactNumber,
+      address,
+      subjects,
+    } = req.body;
 
-    res.status(201).json(newUser);
+    // Create the user
+    const newUser = await createUser(
+      {
+        email,
+        password,
+        role: "teacher",
+        name,
+      },
+      session // Pass session to maintain atomicity
+    );
+
+    // Create the teacher profile connected to the user
+    const newTeacher = await Teacher.create(
+      [
+        {
+          userId: newUser._id,
+          subjects,
+          designation,
+          contactNumber,
+          address,
+          name,
+          email,
+        },
+      ],
+      { session } // Pass session
+    );
+
+    // Update the User with the Teacher ID in the details field
+    await User.findByIdAndUpdate(
+      newUser._id,
+      { details: newTeacher[0]._id }, // Update the details field with Teacher ID
+      { session }
+    );
+
+    // Commit the transaction if both User and Teacher creation succeeded
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({ newUser, newTeacher });
   } catch (error) {
+    // Rollback any changes made in the database
+    await session.abortTransaction();
+    session.endSession();
     next(error);
   }
 };
