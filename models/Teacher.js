@@ -15,6 +15,24 @@ const teacherSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+
+  classes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class", // Link to AcademicClass schema
+    },
+  ],
+  sections: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Section", // Link to Section schema
+    },
+  ],
+
   subjects: [
     {
       subjectId: {

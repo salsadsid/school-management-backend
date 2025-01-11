@@ -21,6 +21,19 @@ export const createTeacher = async (req, res) => {
   }
 };
 
+export const createUserAndTeacher = async (req, res) => {
+  try {
+    const teacherData = req.body;
+    console.log(teacherData);
+    const newTeacher = await teacherService.createUserAndTeacherService(
+      teacherData
+    );
+    res.status(201).json(newTeacher);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // Update teacher details
 export const updateTeacher = async (req, res) => {
   try {

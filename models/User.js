@@ -10,16 +10,17 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.role !== "student";
       },
-      unique: function () {
-        return this.role !== "student";
-      },
       validate: {
-        validator: function (email) {
-          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        validator: async function (email) {
+          // Skip validation if the user is a student
+          if (this.role === "student") return true;
+
+          // Check if another user already exists with the same email
+          const existingUser = await mongoose.models.User.findOne({ email });
+          return !existingUser || existingUser._id.equals(this._id);
         },
-        message: "Please provide a valid email address",
+        message: "Email already in use",
       },
-      sparse: true,
     },
     studentId: {
       type: String,
@@ -48,13 +49,17 @@ const userSchema = new mongoose.Schema(
       default: "student",
       required: true,
     },
+    originalPassword: {
+      type: String,
+      // required: true,
+    },
     details: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "roleDetails",
     },
     roleDetails: {
       type: String,
-      enum: ["Teacher", "Student"],
+      enum: ["Teacher", "Student", "Parent", "Admin", "Moderator"],
     },
   },
   {
@@ -62,12 +67,22 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+userSchema.pre("save", async function (next) {
+  const user = this;
+  if (!user.originalPassword) {
+    user.originalPassword = user.password;
+  }
+
+  next();
+});
+
 // Middleware to hash password before saving
 userSchema.pre("save", async function (next) {
   const user = this;
   if (user.isModified("password")) {
     user.password = await bcrypt.hash(user.password, 10);
   }
+
   next();
 });
 

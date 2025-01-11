@@ -4,5 +4,8 @@ import { tokenVerification } from "../middlewares/tokenVerification.js";
 const router = express.Router();
 
 router.get("/", tokenVerification, teacherController.getAllTeachers);
+router.post("/new", tokenVerification, teacherController.createUserAndTeacher);
+
+router.delete("/:id", tokenVerification, teacherController.deleteTeacher);
 
 export default router;

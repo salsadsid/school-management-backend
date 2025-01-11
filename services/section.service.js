@@ -7,8 +7,12 @@ export const getAllSections = async () => {
 
 // Create a new section
 export const createSection = async (sectionData, session) => {
-  const section = new Section(sectionData);
-  return await section.save({ session }); // Save the section within the transaction
+  try {
+    const newSection = await Section.create([sectionData], { session });
+    return newSection[0]; // Since create() with an array returns an array
+  } catch (error) {
+    throw new Error("Error creating section");
+  }
 };
 // Update a section
 export const updateSection = async (sectionId, updateData) => {

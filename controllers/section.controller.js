@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Class from "../models/Class.js";
+import Teacher from "../models/Teacher.js";
 import * as sectionService from "../services/section.service.js";
 
 // Get all sections
@@ -16,20 +17,28 @@ export const getAllSections = async (req, res) => {
 export const createSection = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+
   try {
     const sectionData = req.body;
 
-    // Create the section and pass the session to maintain atomicity
+    // Step 1: Create the section using the service and pass the session
     const newSection = await sectionService.createSection(sectionData, session);
 
-    // Update the corresponding class with the newly created section ID
+    // Step 2: Update the Class with the new section
     await Class.findByIdAndUpdate(
-      sectionData.class, // Assuming `class` is passed in `sectionData`
-      { $push: { sections: newSection._id } }, // Push the section ID to the sections array
-      { session } // Ensure update happens in the same session
+      sectionData.class,
+      { $push: { sections: newSection._id } },
+      { session }
     );
 
-    // Commit the transaction if everything succeeds
+    // Step 3: Update the Teacher with the new section
+    await Teacher.findByIdAndUpdate(
+      sectionData.teacher, // Assuming `teacher` is passed in `sectionData`
+      { $push: { sections: newSection._id } },
+      { session }
+    );
+
+    // Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
@@ -41,7 +50,6 @@ export const createSection = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 // Update a section
 export const updateSection = async (req, res) => {
   try {

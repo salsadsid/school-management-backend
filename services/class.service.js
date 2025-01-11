@@ -1,4 +1,5 @@
 import Class from "../models/Class.js";
+import Teacher from "../models/Teacher.js";
 
 export const getAllClassesService = async () => {
   try {
@@ -13,11 +14,16 @@ export const getAllClassesService = async () => {
     throw new Error("Error finding classes");
   }
 };
-
 export const createNewClassService = async (classData) => {
   try {
-    // console.log(classData);
+    // Step 1: Create the class
     const newClass = await Class.create(classData);
+
+    // Step 2: Update the Teacher model to add the class
+    await Teacher.findByIdAndUpdate(classData.teacher, {
+      $push: { classes: newClass._id },
+    });
+
     return newClass;
   } catch (error) {
     console.log(error);
