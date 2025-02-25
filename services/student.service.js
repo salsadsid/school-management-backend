@@ -68,9 +68,32 @@ export const getAllStudentsService = async ({
 
 export const getStudentByIdService = async (studentId) => {
   try {
-    const student = await Student.findOne({ studentId });
+    console.log(studentId);
+    const student = await Student.findOne({ _id: studentId });
     return student;
   } catch (error) {
     throw new Error("Error finding student");
+  }
+};
+
+export const updateAStudentService = async (studentId, studentData) => {
+  try {
+    const student = await Student.findOneAndUpdate(
+      { _id: studentId },
+      studentData,
+      { new: true }
+    );
+    return student;
+  } catch (error) {
+    throw new Error("Error updating student");
+  }
+};
+
+export const deleteStudentService = async (studentId) => {
+  try {
+    const student = await Student.findOneAndDelete({ _id: studentId });
+    return student;
+  } catch (error) {
+    throw new Error("Error deleting student");
   }
 };

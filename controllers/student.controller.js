@@ -2,8 +2,10 @@ import { addStudentToClassService } from "../services/class.service.js";
 import { addStudentToSectionService } from "../services/section.service.js";
 import {
   createUserAndStudentService,
+  deleteStudentService,
   getAllStudentsService,
   getStudentByIdService,
+  updateAStudentService,
 } from "../services/student.service.js";
 
 const createStudent = async (req, res, next) => {
@@ -45,7 +47,7 @@ const getAllStudents = async (req, res, next) => {
 
 const getStudentById = async (req, res, next) => {
   try {
-    const { studentId, password } = req.body;
+    const { studentId, password } = req.params;
     // console.log(studentId, password);
     const student = await getStudentByIdService(studentId);
 
@@ -63,4 +65,38 @@ const getStudentById = async (req, res, next) => {
   }
 };
 
-export default { createStudent, getAllStudents, getStudentById };
+const updateStudent = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const updateData = req.body;
+    console.log(studentId, updateData);
+    const updatedStudent = await updateAStudentService(studentId, updateData);
+    if (!updatedStudent) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+    res.status(200).json(updatedStudent);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteStudent = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const deletedStudent = await deleteStudentService(studentId);
+    if (!deletedStudent) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+    res.status(200).json(deletedStudent);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default {
+  createStudent,
+  getAllStudents,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
+};

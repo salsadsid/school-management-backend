@@ -15,7 +15,6 @@ const sectionSchema = new mongoose.Schema(
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Class teacher responsible for this section
-      required: true,
     },
     students: [
       {

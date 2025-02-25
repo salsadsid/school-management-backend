@@ -29,6 +29,13 @@ const studentSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  phoneNumber1: {
+    type: String,
+    required: true,
+  },
+  phoneNumber2: {
+    type: String,
+  },
   guardians: [
     {
       name: { type: String, required: true },
