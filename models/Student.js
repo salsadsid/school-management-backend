@@ -23,7 +23,7 @@ const studentSchema = new mongoose.Schema({
   section: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Section", // Reference to the Section model
-    required: true,
+    // required: true,
   },
   rollNumber: {
     type: Number,
