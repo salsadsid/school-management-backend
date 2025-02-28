@@ -24,13 +24,9 @@ const userSchema = new mongoose.Schema(
     },
     studentId: {
       type: String,
-      unique: function () {
-        return this.role === "student";
-      },
       required: function () {
         return this.role === "student";
       },
-      sparse: true,
     },
     password: {
       type: String,
@@ -75,6 +71,17 @@ userSchema.pre("save", async function (next) {
 
   next();
 });
+
+userSchema.index(
+  { studentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: "student",
+      studentId: { $exists: true },
+    },
+  }
+);
 
 // Middleware to hash password before saving
 userSchema.pre("save", async function (next) {

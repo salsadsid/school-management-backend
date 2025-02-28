@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Teacher from "../models/Teacher.js";
 import User from "../models/User.js";
 
@@ -17,46 +16,28 @@ export const createTeacher = async (teacherData) => {
 };
 
 export const createUserAndTeacherService = async (teacherData) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     // Step 1: Create the User
-    const newUser = await User.create(
-      [
-        {
-          name: teacherData.name,
-          email: teacherData.email,
-          password: teacherData.password,
-          role: "teacher",
-          roleDetails: "Teacher", // This indicates it's linked to a student
-        },
-      ],
-      { session }
-    );
+    const newUser = await User.create({
+      name: teacherData.name,
+      email: teacherData.email,
+      password: teacherData.password,
+      role: "teacher",
+      roleDetails: "Teacher",
+    });
 
-    // Step 2: Create the Student with the user's _id as userId
-    const newTeacher = await Teacher.create(
-      [
-        {
-          ...teacherData,
-          userId: newUser[0]._id, // Linking the userId
-        },
-      ],
-      { session }
-    );
+    // Step 2: Create the Teacher with the user's _id as userId
+    const newTeacher = await Teacher.create({
+      ...teacherData,
+      userId: newUser._id, // Direct reference without array index
+    });
 
-    newUser[0].details = newTeacher[0]._id;
-    await newUser[0].save({ session });
+    // Step 3: Update user with teacher reference
+    newUser.details = newTeacher._id;
+    await newUser.save();
 
-    // Commit transaction
-    await session.commitTransaction();
-    session.endSession();
-
-    return { user: newUser[0], teacher: newTeacher[0] };
+    return { user: newUser, teacher: newTeacher };
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw new Error(`Error creating user and teacher: ${error.message}`);
   }
 };

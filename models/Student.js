@@ -93,24 +93,24 @@ const studentSchema = new mongoose.Schema({
 });
 
 // Compound Index to ensure rollNumber is unique within class and section
-studentSchema.pre("save", async function (next) {
-  const existingStudent = await Student.findOne({
-    rollNumber: this.rollNumber,
-    classId: this.classId,
-    section: this.section,
-  });
+// studentSchema.pre("save", async function (next) {
+//   const existingStudent = await Student.findOne({
+//     rollNumber: this.rollNumber,
+//     classId: this.classId,
+//     section: this.section,
+//   });
 
-  if (
-    existingStudent &&
-    existingStudent._id.toString() !== this._id.toString()
-  ) {
-    return next(
-      new Error("Roll number must be unique within the same class and section.")
-    );
-  }
+//   if (
+//     existingStudent &&
+//     existingStudent._id.toString() !== this._id.toString()
+//   ) {
+//     return next(
+//       new Error("Roll number must be unique within the same class and section.")
+//     );
+//   }
 
-  next();
-});
+//   next();
+// });
 
 // Middleware to update `updatedAt` before save
 studentSchema.pre("save", function (next) {

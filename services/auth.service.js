@@ -1,10 +1,10 @@
 import config from "../config/config.js";
 import User from "../models/User.js";
 
-export const createUser = async (user, session) => {
+export const createUser = async (user) => {
   try {
-    const createdUser = await User.create([user], { session }); // Use the session
-    return createdUser[0]; // User.create returns an array when using sessions
+    const createdUser = await User.create(user); // Use the session
+    return createdUser; // User.create returns an array when using sessions
   } catch (error) {
     console.log(error);
     throw new Error("Error creating account");

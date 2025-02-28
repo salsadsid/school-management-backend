@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Class from "../models/Class.js";
 import Teacher from "../models/Teacher.js";
 import * as sectionService from "../services/section.service.js";
@@ -15,39 +14,39 @@ export const getAllSections = async (req, res) => {
 
 // Create a new section
 export const createSection = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let newSection = null;
 
   try {
     const sectionData = req.body;
 
-    // Step 1: Create the section using the service and pass the session
-    const newSection = await sectionService.createSection(sectionData, session);
+    // Step 1: Create the section
+    newSection = await sectionService.createSection(sectionData);
 
-    // Step 2: Update the Class with the new section
-    await Class.findByIdAndUpdate(
-      sectionData.class,
-      { $push: { sections: newSection._id } },
-      { session }
-    );
+    // Step 2: Update the Class
+    await Class.findByIdAndUpdate(sectionData.class, {
+      $push: { sections: newSection._id },
+    });
 
-    // Step 3: Update the Teacher with the new section
-    await Teacher.findByIdAndUpdate(
-      sectionData.teacher, // Assuming `teacher` is passed in `sectionData`
-      { $push: { sections: newSection._id } },
-      { session }
-    );
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+    // Step 3: Update the Teacher
+    await Teacher.findByIdAndUpdate(sectionData.teacher, {
+      $push: { sections: newSection._id },
+    });
 
     res.status(201).json(newSection);
   } catch (error) {
-    // Rollback the transaction in case of an error
-    await session.abortTransaction();
-    session.endSession();
-    res.status(400).json({ message: error.message });
+    // Cleanup if section was created but other operations failed
+    if (newSection) {
+      await sectionService
+        .deleteSection(newSection._id)
+        .catch((cleanupError) => {
+          console.error("Cleanup failed:", cleanupError);
+        });
+    }
+
+    res.status(400).json({
+      message: error.message,
+      partialCleanup: !!newSection,
+    });
   }
 };
 // Update a section

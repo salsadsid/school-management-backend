@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import config from "../config/config.js";
 import User from "../models/User.js";
 import {
@@ -9,9 +8,6 @@ import {
 } from "../services/auth.service.js";
 
 const signup = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { email, password, name, role } = req.body;
 
@@ -21,47 +17,29 @@ const signup = async (req, res, next) => {
 
     if (!RoleModel) throw new Error("Invalid role");
 
-    // Create the user
-    const newUser = await createUser(
-      {
-        email,
-        password,
-        role,
-        roleDetails,
-        name,
-      },
-      session // Pass session to maintain atomicity
-    );
+    // Create the user without transaction
+    const newUser = await createUser({
+      email,
+      password,
+      role,
+      roleDetails,
+      name,
+    });
 
-    // console.log(newUser._id);
-    // Create the role-specific profile connected to the user
-    const newRole = await RoleModel.create(
-      [
-        {
-          userId: newUser._id,
-          name,
-          email,
-        },
-      ],
-      { session }
-    );
+    // Create the role-specific profile
+    const newRole = await RoleModel.create([
+      {
+        userId: newUser._id,
+        name,
+        email,
+      },
+    ]);
 
     // Update the user with the role-specific ID
-    await User.findByIdAndUpdate(
-      newUser._id,
-      { details: newRole[0]._id },
-      { session }
-    );
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+    await User.findByIdAndUpdate(newUser._id, { details: newRole[0]._id });
 
     res.status(201).json({ newUser, newRole: newRole[0] });
   } catch (error) {
-    // Rollback the transaction in case of error
-    await session.abortTransaction();
-    session.endSession();
     next(error);
   }
 };
