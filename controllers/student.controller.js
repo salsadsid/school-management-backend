@@ -1,3 +1,4 @@
+import biotimeService from "../services/biotime.service.js";
 import { addStudentToClassService } from "../services/class.service.js";
 import { addStudentToSectionService } from "../services/section.service.js";
 import {
@@ -93,10 +94,41 @@ const deleteStudent = async (req, res, next) => {
   }
 };
 
+const getStudentsPhoneNumbers = async (req, res, next) => {
+  try {
+    // Validate input
+    const { start_time, end_time } = req.query;
+    if (!start_time || !end_time) {
+      return res.status(400).json({
+        success: false,
+        message: "Both start_time and end_time are required",
+      });
+    }
+    console.log("getStudentsPhoneNumbers", start_time);
+    // Get phone numbers
+    const phoneNumbers = await biotimeService.getPhoneNumbersByTimeRange(
+      start_time,
+      end_time
+    );
+
+    res.json({
+      success: true,
+      count: phoneNumbers.length,
+      data: phoneNumbers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
+  }
+};
+
 export default {
   createStudent,
   getAllStudents,
   getStudentById,
   updateStudent,
   deleteStudent,
+  getStudentsPhoneNumbers,
 };
