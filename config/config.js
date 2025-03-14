@@ -2,6 +2,7 @@ import dotenv from "dotenv"; // Load environment variables from a .env file
 import Moderator from "../models/Moderator.js";
 import Student from "../models/Student.js";
 import Teacher from "../models/Teacher.js";
+import Admin from "../models/Admin.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const config = {
     Teacher: "Teacher",
     Student: "Student",
     Moderator: "Moderator",
+    Admin: "Admin",
   },
   roleDetailsMap: {
     teacher: "Teacher",
@@ -27,6 +29,7 @@ const config = {
     Teacher,
     Student,
     Moderator,
+    Admin,
   },
 };
 

@@ -2,7 +2,11 @@ import express from "express";
 import studentController from "../controllers/student.controller.js";
 import { tokenVerification } from "../middlewares/tokenVerification.js";
 const router = express.Router();
-
+router.get(
+  "/phones",
+  tokenVerification,
+  studentController.getStudentsPhoneNumbers
+);
 router.post("/login", studentController.getStudentById);
 router.get("/:studentId", tokenVerification, studentController.getStudentById);
 router.put("/:studentId", tokenVerification, studentController.updateStudent);
