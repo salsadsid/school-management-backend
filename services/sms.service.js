@@ -154,13 +154,13 @@ const sendSMS = async (numbers, messages) => {
         SmsData: smsData,
       }
     );
-    // console.log(response.data);
+    console.log(response.data);
     // 2. Validate response
     if (response.data.statusCode !== "200") {
       throw new Error(response.data.msg || "Invalid SMS response");
     }
 
-    return response.data.data;
+    return response.data;
   } catch (error) {
     throw new Error(
       `SMS Failed: ${error.response?.data?.message || error.message}`
