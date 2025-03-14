@@ -1,8 +1,9 @@
 // services/smsService.js
 import axios from "axios";
+import moment from "moment";
 import BioTimeTransaction from "../models/BioTimeTransaction.js";
+import SMSReport from "../models/SMSReport.js";
 import Student from "../models/Student.js";
-import SMSRecord from "../models/SMSRecord.js";
 
 // Modified fetchTransactions function
 export const fetchTransactions = async (startTime, endTime, pageSize) => {
@@ -86,69 +87,109 @@ export const sendSingleSMS = async (transactionId) => {
   }
 };
 
-// Modified sendBulkSMS
 export const sendBulkSMS = async (transactionIds) => {
   try {
-    // 1. Get all unprocessed transactions
+    // 1. Get unprocessed transactions
     const transactions = await BioTimeTransaction.find({
       transactionId: { $in: transactionIds },
       processed: false,
     });
 
-    if (transactions.length === 0) return false; // No transactions to process
+    if (transactions.length === 0)
+      return { success: false, message: "No transactions to process" };
 
-    // 2. Get student mappings
-    const students = await Student.find({
-      studentId: { $in: transactions.map((t) => t.empCode) },
-    });
+    // 2. Get students and create map
+    const empCodes = transactions.map((t) => t.empCode);
+    const students = await Student.find({ studentId: { $in: empCodes } });
+    const studentMap = new Map(students.map((s) => [s.studentId, s]));
 
-    // 3. Create SMS batch
-    const smsBatch = transactions.map((transaction) => {
-      const student = students.find(
-        (s) => s.studentId.toString() === transaction.empCode
+    // 3. Prepare SMS batch and track failures
+    const smsBatch = [];
+    const failedDetails = [];
+
+    for (const transaction of transactions) {
+      const student = studentMap.get(transaction.empCode);
+
+      // Validate student and required fields
+      if (!student) {
+        failedDetails.push({
+          studentId: transaction.empCode,
+          reason: "Student not found",
+        });
+        continue;
+      }
+
+      const phoneNumber = student.phoneNumber1?.trim();
+      const name = student.name?.trim();
+      const studentId = student.studentId?.trim();
+      const rawPunchTime = transaction.rawData?.punch_time;
+
+      if (!phoneNumber || !name || !studentId || !rawPunchTime) {
+        failedDetails.push({
+          studentId: transaction.empCode,
+          reason: "Missing required data",
+        });
+        continue;
+      }
+
+      // Format punch time
+      const punchTime = moment(rawPunchTime, "YYYY-MM-DD HH:mm:ss").format(
+        "DD MMM YYYY, h:mm a"
       );
-      return {
-        number: student?.phoneNumber1,
-        message: `Dear ${student.name},ID: ${student.studentId}, attendance recorded at ${transaction.rawData.punch_time} in H.A.K Academy.`,
-      };
-    });
 
-    // 4. Validate all numbers exist
-    const invalidEntries = smsBatch.filter((e) => !e.number);
-    if (invalidEntries.length > 0) {
-      throw new Error(
-        `Missing phone numbers for ${invalidEntries.length} students`
-      );
+      smsBatch.push({
+        number: `88${phoneNumber}`, // Use the formatted phoneNumber,
+        name,
+        studentId,
+        message: `Dear ${name}, ID: ${studentId}, attendance recorded at ${punchTime} in H.A.K Academy.`,
+      });
     }
 
-    // 5. Send SMS
-    await sendSMS(
-      smsBatch.map((e) => e.number),
-      smsBatch.map((e) => e.message)
-    );
+    // 4. Se  nd SMS and handle response
+    let apiResponse = {};
+    try {
+      if (smsBatch.length > 0) {
+        apiResponse = await sendSMS(smsBatch);
+      }
+    } catch (error) {
+      throw new Error(`SMS API Failed: ${error.message}`);
+    }
 
-    // 6. Mark as processed
+    // 5. Create SMS report
+    const smsReport = new SMSReport({
+      total: smsBatch.length + failedDetails.length,
+      successCount: smsBatch.length,
+      failedCount: failedDetails.length,
+      details: smsBatch.map((entry) => ({
+        ...entry,
+        status: "Success",
+      })),
+      failedDetails,
+      apiResponse,
+    });
+
+    await smsReport.save();
+
+    // 6. Mark transactions as processed
     await BioTimeTransaction.updateMany(
-      { transactionId: { $in: transactions.map((t) => t.transactionId) } },
+      { _id: { $in: transactions.map((t) => t._id) } },
       { $set: { processed: true } }
     );
 
-    return true;
+    return smsReport;
   } catch (error) {
     throw error;
   }
 };
 
-// Helper function to send SMS
-const sendSMS = async (numbers, messages) => {
+const sendSMS = async (smsBatch) => {
   try {
-    const smsData = numbers.map((number, index) => ({
+    const smsData = smsBatch.map(({ number, message }) => ({
       MobNumber: number,
-      Message: messages[index],
+      Message: message,
     }));
-    console.log(smsData);
     const response = await axios.post(
-      process.env.SMS_API_URL + "/api/SmsSending/DSMS",
+      `${process.env.SMS_API_URL}/api/SmsSending/DSMS`,
       {
         UserName: process.env.SMS_USER,
         Apikey: process.env.SMS_API_KEY,
@@ -158,15 +199,13 @@ const sendSMS = async (numbers, messages) => {
       }
     );
 
-    const newRecord = new SMSRecord(response.data);
-    await newRecord.save();
-
-    // 2. Validate response
-    if (response.data.statusCode !== "200") {
-      throw new Error(response.data.responseResult || "Invalid SMS response");
-    }
-
-    return response.data;
+    console.log(response.data);
+    return {
+      statusCode: response.data.statusCode,
+      status: response.data.status,
+      trxnId: response.data.trxnId,
+      responseResult: response.data.responseResult,
+    };
   } catch (error) {
     throw new Error(
       `SMS Failed: ${error.response?.data?.message || error.message}`
@@ -175,5 +214,61 @@ const sendSMS = async (numbers, messages) => {
 };
 
 export const sendTestSMS = async (number, message) => {
-  return await sendSMS([number], [message]);
+  try {
+    const smsBatch = [];
+    const failedDetails = [];
+
+    // Validate input
+    if (!number?.trim() || !message?.trim()) {
+      failedDetails.push({
+        reason: "Missing phone number or message",
+      });
+    } else {
+      smsBatch.push({
+        number: number.trim(),
+        name: "Test User",
+        studentId: "TEST-ID",
+        message: message.trim(),
+      });
+    }
+
+    // Send SMS
+    let apiResponse = {};
+    try {
+      if (smsBatch.length > 0) {
+        apiResponse = await sendSMS(smsBatch);
+      }
+    } catch (error) {
+      throw new Error(`SMS API Failed: ${error.message}`);
+    }
+
+    // Create report
+    const smsReport = new SMSReport({
+      total: smsBatch.length + failedDetails.length,
+      successCount: smsBatch.length,
+      failedCount: failedDetails.length,
+      details: smsBatch.map((entry) => ({
+        ...entry,
+        status: "Success",
+      })),
+      failedDetails,
+      apiResponse,
+      isTest: true,
+    });
+
+    await smsReport.save();
+    return smsReport;
+  } catch (error) {
+    error.report = {
+      total: 1,
+      successCount: 0,
+      failedCount: 1,
+      failedDetails: [
+        {
+          reason: error.message,
+        },
+      ],
+    };
+    throw error;
+  }
 };

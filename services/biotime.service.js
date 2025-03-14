@@ -16,7 +16,7 @@ class BioTimeService {
           },
           headers: {
             "Content-Type": "application/json",
-            Authorization: `JWT eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzQyMzIwODkzLCJlbWFpbCI6ImRldi5zaWRkaXF1ZWVAZ21haWwuY29tIiwib3JpZ19pYXQiOjE3NDE3MTYwOTN9.cl0xkTUOPplWyxZZdwaRzPJt70iMnoKCoF3zuNBey9g`,
+            Authorization: `JWT ${process.env.BIOTIME_API_TOKEN}`,
           },
         }
       );
