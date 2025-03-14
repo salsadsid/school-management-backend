@@ -35,20 +35,28 @@ router.post("/send-single", async (req, res) => {
 router.post("/send-bulk", async (req, res) => {
   try {
     const { transactionIds } = req.body;
-    const response = await sendBulkSMS(transactionIds);
-    res.json({ success: true, response });
+    const report = await sendBulkSMS(transactionIds);
+    res.json({ success: true, report });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      report: error.report, // Optional: Add error reporting
+    });
   }
 });
 
 router.post("/test", async (req, res) => {
   try {
     const { number, message } = req.body;
-    const response = await sendTestSMS(number, message);
-    res.json({ success: true, response });
+    const report = await sendTestSMS(number, message);
+    res.json({ success: true, report });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      report: error.report,
+    });
   }
 });
 

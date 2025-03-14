@@ -19,6 +19,6 @@ const smsRecordSchema = new mongoose.Schema({
   },
 });
 
-const SMSRecord = mongoose.model("SentSMSRecord", smsRecordSchema);
+const SMSRecord = mongoose.model("SMSRecord", smsRecordSchema);
 
 export default SMSRecord;
