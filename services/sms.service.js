@@ -169,5 +169,5 @@ const sendSMS = async (numbers, messages) => {
 };
 
 export const sendTestSMS = async (number, message) => {
-  await sendSMS([number], [message]);
+  return await sendSMS([number], [message]);
 };
