@@ -11,7 +11,7 @@ const smsRecordSchema = new mongoose.Schema({
     required: true,
   },
   trxnId: {
-    type: Date,
+    type: String,
     required: true,
   },
   responseResult: {
