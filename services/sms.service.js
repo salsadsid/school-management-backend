@@ -2,6 +2,7 @@
 import axios from "axios";
 import BioTimeTransaction from "../models/BioTimeTransaction.js";
 import Student from "../models/Student.js";
+import SMSRecord from "../models/SMSRecord.js";
 
 // Modified fetchTransactions function
 export const fetchTransactions = async (startTime, endTime, pageSize) => {
@@ -103,10 +104,12 @@ export const sendBulkSMS = async (transactionIds) => {
 
     // 3. Create SMS batch
     const smsBatch = transactions.map((transaction) => {
-      const student = students.find((s) => s.studentId === transaction.empCode);
+      const student = students.find(
+        (s) => s.studentId.toString() === transaction.empCode
+      );
       return {
         number: student?.phoneNumber1,
-        message: `Dear ${student?.name}, attendance at ${transaction.rawData.punch_time}`,
+        message: `Dear ${student.name},ID: ${student.studentId}, attendance recorded at ${transaction.rawData.punch_time} in H.A.K Academy.`,
       };
     });
 
@@ -154,10 +157,13 @@ const sendSMS = async (numbers, messages) => {
         SmsData: smsData,
       }
     );
-    console.log(response.data);
+
+    const newRecord = new SMSRecord(response.data);
+    await newRecord.save();
+
     // 2. Validate response
     if (response.data.statusCode !== "200") {
-      throw new Error(response.data.msg || "Invalid SMS response");
+      throw new Error(response.data.responseResult || "Invalid SMS response");
     }
 
     return response.data;
