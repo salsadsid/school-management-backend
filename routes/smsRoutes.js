@@ -2,6 +2,7 @@
 import express from "express";
 import {
   fetchTransactions,
+  previewBulkSMS,
   sendBulkSMS,
   sendSingleSMS,
   sendTestSMS,
@@ -37,6 +38,19 @@ router.post("/send-bulk", async (req, res) => {
     const { transactionIds } = req.body;
     const report = await sendBulkSMS(transactionIds);
     res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      report: error.report, // Optional: Add error reporting
+    });
+  }
+});
+
+router.get("/preview", async (req, res) => {
+  try {
+    const report = await previewBulkSMS();
+    res.json(report);
   } catch (error) {
     res.status(500).json({
       success: false,
