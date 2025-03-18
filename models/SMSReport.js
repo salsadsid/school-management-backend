@@ -8,11 +8,16 @@ const smsReportSchema = new mongoose.Schema(
     failedCount: Number,
     details: [
       {
-        number: String,
-        name: String,
-        studentId: String,
-        message: String,
-        status: String,
+        number: { type: String, required: true },
+        name: { type: String, required: true },
+        studentId: { type: String, required: true },
+        message: { type: String, required: true },
+        status: { type: String, enum: ["Success", "Failed"], required: true },
+        type: {
+          type: String,
+          enum: ["entry", "late", "absent", "exit"],
+          required: true,
+        },
       },
     ],
     failedDetails: [
@@ -32,5 +37,4 @@ const smsReportSchema = new mongoose.Schema(
 );
 
 const SMSReport = mongoose.model("SMSReport", smsReportSchema);
-
 export default SMSReport;

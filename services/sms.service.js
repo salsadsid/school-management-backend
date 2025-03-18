@@ -7,64 +7,20 @@ import SMSReport from "../models/SMSReport.js";
 import Student from "../models/Student.js";
 const tz = "Asia/Dhaka";
 // Modified fetchTransactions function
+
 const createEntryMessage = (name, id, time, type) => {
-  const formattedTime = time.format("DD MMM YYYY [at] h:mm A");
-  const base = `Student Name: ${name} (ID: ${id}), Today your ${
+  const formattedTime = moment.tz(time, tz).format("DD MMM YYYY [at] h:mm A");
+  return `Student Name: ${name} (ID: ${id}), Today your ${
     type === "entry" ? "" : "late "
-  }entry`;
-  const body = `${base} has been recorded at H.A.K Academy on ${formattedTime}.`;
-  return `${body}\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR.`;
+  }entry recorded at ${formattedTime}.\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR`;
 };
 
-const createAbsentMessage = (name, id) => {
-  const base = `Student Name: ${name} (ID: ${id}), Your absence has been noted today.`;
-  return `${base}\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR.`;
-};
+const createAbsentMessage = (name, id) =>
+  `Student Name: ${name} (ID: ${id}), Your absence noted today.\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR`;
 
 const createExitMessage = (name, id, time) => {
-  const formattedTime = moment
-    .tz(time, "YYYY-MM-DD HH:mm:ss", tz)
-    .format("DD MMM YYYY [at] h:mm A");
-  const base = `Student Name: ${name} (ID: ${id}), Today your exit has been recorded`;
-  return `${base} at H.A.K Academy on ${formattedTime}.\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR.`;
-};
-
-const processSMSBatch = async (
-  smsBatch,
-  failedDetails,
-  processedTransactions
-) => {
-  let apiResponse = {};
-  if (smsBatch.length > 0) {
-    try {
-      apiResponse = await sendSMS(smsBatch);
-    } catch (error) {
-      throw new Error(`SMS API Failed: ${error.message}`);
-    }
-  }
-
-  const smsReport = new SMSReport({
-    total: smsBatch.length + failedDetails.length,
-    successCount: smsBatch.length,
-    failedCount: failedDetails.length,
-    details: smsBatch.map((entry) => ({
-      number: entry.number,
-      name: entry.name,
-      studentId: entry.studentId,
-      message: entry.message,
-      status: "Success",
-    })),
-    failedDetails,
-    apiResponse,
-  });
-
-  await smsReport.save();
-  await BioTimeTransaction.updateMany(
-    { _id: { $in: Array.from(processedTransactions) } },
-    { $set: { processed: true } }
-  );
-
-  return smsReport;
+  const formattedTime = moment.tz(time, tz).format("DD MMM YYYY [at] h:mm A");
+  return `Student Name: ${name} (ID: ${id}),Your exit recorded at ${formattedTime}.\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR`;
 };
 
 export const fetchTransactions = async (startTime, endTime, pageSize) => {
@@ -96,9 +52,7 @@ export const fetchTransactions = async (startTime, endTime, pageSize) => {
           $setOnInsert: {
             transactionId: transaction.id,
             empCode: transaction.emp_code,
-            punchTime: new Date(
-              new Date(transaction.punch_time).getTime() - 7200000
-            ),
+            punchTime: new Date(transaction.punch_time),
             rawData: transaction,
           },
         },
@@ -152,10 +106,7 @@ export const sendSingleSMS = async (transactionId) => {
 
 export const previewBulkSMS = async () => {
   try {
-    // 1. Get all students from classes FIVE to TEN
-    const tz = "Asia/Dhaka"; // Define your timezone explicitly
-
-    // 1. Get all students from target classes
+    // 1. Fetch students
     const classNames = [
       "CLASS FIVE",
       "CLASS SIX",
@@ -167,179 +118,164 @@ export const previewBulkSMS = async () => {
     const classes = await Class.find({ name: { $in: classNames } });
     const classIds = classes.map((c) => c._id);
     const students = await Student.find({ classId: { $in: classIds } });
-
-    if (students.length === 0) {
+    if (!students.length)
       return { success: false, message: "No students found" };
-    }
 
-    // 2. Prepare precise date ranges for today (12:01 AM to 11:59 PM local time)
-    const todayStart = moment.tz(tz).startOf("day").add(1, "minute").toDate();
-    const todayEnd = moment.tz(tz).endOf("day").subtract(1, "minute").toDate();
-    const studentIds = students.map((s) => s.studentId);
-    // console.log(todayEnd);
-    // 3. Fetch relevant biometric transactions
-    const transactions = await BioTimeTransaction.find({
-      empCode: { $in: studentIds },
-      processed: false,
-      punchTime: { $gte: todayStart, $lt: todayEnd },
+    // 2. Time calculations
+    const now = moment.tz(tz);
+    const todayStart = now.clone().startOf("day").add(1, "minute");
+    const todayEnd = now.clone().endOf("day").subtract(1, "minute");
+    const entryCutoff = now.clone().set({ hour: 8, minute: 1, second: 0 });
+    const exitCutoff = now.clone().set({ hour: 11, minute: 30, second: 0 });
+    const lateThreshold = now.clone().set({ hour: 7, minute: 31, second: 0 });
+
+    // 3. Get existing reports
+    const existingReports = await SMSReport.find({
+      createdAt: { $gte: todayStart.toDate(), $lte: todayEnd.toDate() },
     });
 
-    // 4. Organize transactions by student
-    const transactionsByStudent = new Map();
-    transactions.forEach((t) => {
-      const entries = transactionsByStudent.get(t.empCode) || [];
-      entries.push(t);
-      transactionsByStudent.set(t.empCode, entries);
-    });
-
-    // 5. Time configuration for message logic
-    const currentTime = moment.tz(tz);
-    const entryCutoff = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 8, minute: 1 });
-    const exitCutoff = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 12, minute: 30 });
-    const lateThreshold = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 7, minute: 31 });
-
-    // 6. Process student messages
+    // 4. Process students
     const smsBatch = [];
     const failedDetails = [];
-    const processedTransactions = new Set();
+    const processedTransactions = [];
 
     for (const student of students) {
       const { studentId, name, phoneNumber1 } = student;
-      const phoneNumber = phoneNumber1?.trim();
-      const studentName = name?.trim();
+      const phoneNumber = phoneNumber1?.toString().trim();
+      const studentName = name?.toString().trim();
 
+      // Validate contact info
       if (!phoneNumber || !studentName) {
-        failedDetails.push({ studentId, reason: "Missing contact info" });
+        failedDetails.push({
+          studentId: studentId?.toString(),
+          reason: "Missing contact info",
+        });
         continue;
       }
 
-      // Process entry messages
-      const studentTransactions = transactionsByStudent.get(studentId) || [];
-      let entryMessageSent = false;
+      // Check existing messages
+      const hasEntry = existingReports.some((r) =>
+        r.details.some(
+          (d) =>
+            d.studentId === studentId.toString() &&
+            ["entry", "late"].includes(d.type)
+        )
+      );
+      const hasAbsent = existingReports.some((r) =>
+        r.details.some(
+          (d) => d.studentId === studentId.toString() && d.type === "absent"
+        )
+      );
+      const hasExit = existingReports.some((r) =>
+        r.details.some(
+          (d) => d.studentId === studentId.toString() && d.type === "exit"
+        )
+      );
 
-      // Filter and process entry transactions with proper timezone parsing
-      const entryTransactions = studentTransactions.filter((t) => {
-        const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-        return punchTime.isBefore(entryCutoff);
+      // Get transactions
+      const transactions = await BioTimeTransaction.find({
+        empCode: studentId.toString(),
+        processed: false,
+        punchTime: { $gte: todayStart.toDate(), $lt: todayEnd.toDate() },
       });
 
-      if (entryTransactions.length > 0) {
-        const earliestEntry = entryTransactions.reduce((prev, current) => {
-          const prevTime = moment.tz(prev.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-          const currTime = moment.tz(
-            current.punchTime,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
-          return prevTime.isBefore(currTime) ? prev : current;
-        });
-
-        const entryTime = moment.tz(
-          earliestEntry.punchTime,
-          "YYYY-MM-DD HH:mm:ss",
-          tz
+      // Process entry/late
+      if (!hasEntry) {
+        const validEntries = transactions.filter((t) =>
+          moment.tz(t.punchTime, tz).isBefore(entryCutoff)
         );
-        const entryType = entryTime.isBefore(lateThreshold) ? "entry" : "late";
 
-        smsBatch.push({
-          number: phoneNumber,
-          name: studentName,
-          studentId,
-          message: createEntryMessage(
-            studentName,
-            studentId,
-            entryTime,
-            entryType
-          ),
-          type: entryType,
-        });
+        if (validEntries.length > 0) {
+          const earliest = validEntries.reduce((a, b) =>
+            moment.tz(a.punchTime, tz).isBefore(moment.tz(b.punchTime, tz))
+              ? a
+              : b
+          );
 
-        entryTransactions.forEach((t) => processedTransactions.add(t._id));
-        entryMessageSent = true;
-      }
-
-      // Handle absent notifications
-      if (!entryMessageSent && currentTime.isAfter(entryCutoff)) {
-        smsBatch.push({
-          number: phoneNumber,
-          name: studentName,
-          studentId,
-          message: createAbsentMessage(studentName, studentId),
-          type: "absent",
-        });
-      }
-
-      // Process exit messages
-      if (currentTime.isAfter(exitCutoff)) {
-        const exitTransactions = studentTransactions.filter((t) => {
-          const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-          return punchTime.isSameOrAfter(exitCutoff);
-        });
-
-        if (exitTransactions.length > 0) {
-          const latestExit = exitTransactions.reduce((prev, current) => {
-            const prevTime = moment.tz(
-              prev.punchTime,
-              "YYYY-MM-DD HH:mm:ss",
-              tz
-            );
-            const currTime = moment.tz(
-              current.punchTime,
-              "YYYY-MM-DD HH:mm:ss",
-              tz
-            );
-            return prevTime.isAfter(currTime) ? prev : current;
-          });
+          const entryType = moment
+            .tz(earliest.punchTime, tz)
+            .isBefore(lateThreshold)
+            ? "entry"
+            : "late";
 
           smsBatch.push({
             number: phoneNumber,
             name: studentName,
-            studentId,
+            studentId: studentId.toString(),
+            message: createEntryMessage(
+              studentName,
+              studentId,
+              earliest.punchTime,
+              entryType
+            ),
+            type: entryType,
+          });
+          processedTransactions.push(earliest._id);
+        } else if (now.isAfter(entryCutoff) && !hasAbsent) {
+          smsBatch.push({
+            number: phoneNumber,
+            name: studentName,
+            studentId: studentId.toString(),
+            message: createAbsentMessage(studentName, studentId),
+            type: "absent",
+          });
+        }
+      }
+
+      // Process exit
+      if (!hasExit && now.isAfter(exitCutoff)) {
+        const validExits = transactions.filter((t) =>
+          moment.tz(t.punchTime, tz).isSameOrAfter(exitCutoff)
+        );
+
+        if (validExits.length > 0) {
+          const latest = validExits.reduce((a, b) =>
+            moment.tz(a.punchTime, tz).isAfter(moment.tz(b.punchTime, tz))
+              ? a
+              : b
+          );
+
+          smsBatch.push({
+            number: phoneNumber,
+            name: studentName,
+            studentId: studentId.toString(),
             message: createExitMessage(
               studentName,
               studentId,
-              latestExit.punchTime
+              latest.punchTime
             ),
             type: "exit",
           });
-
-          exitTransactions.forEach((t) => processedTransactions.add(t._id));
+          processedTransactions.push(latest._id);
         }
       }
     }
 
-    return {
-      success: true,
-      smsBatch,
+    // 5. Create SMS report
+    const smsReport = new SMSReport({
+      date: new Date(),
+      total: smsBatch.length + failedDetails.length,
+      successCount: smsBatch.length,
+      failedCount: failedDetails.length,
+      details: smsBatch.map((entry) => ({
+        number: entry.number,
+        name: entry.name,
+        studentId: entry.studentId,
+        message: entry.message,
+        status: "Success",
+        type: entry.type,
+      })),
       failedDetails,
-      processedTransactions,
-      timeData: {
-        todayStart: todayStart.toISOString(),
-        todayEnd: todayEnd.toISOString,
-        entryCutoff: entryCutoff.toISOString(),
-        exitCutoff: exitCutoff.toISOString(),
-        currentTime: currentTime.toISOString(),
-      },
-    };
+    });
+    return { smsReport, smsBatch };
   } catch (error) {
-    throw new Error("Error fetching transactions");
+    throw new Error(`SMS processing failed: ${error.message}`);
   }
 };
 
 export const sendBulkSMS = async () => {
   try {
-    const tz = "Asia/Dhaka"; // Define your timezone explicitly
-
-    // 1. Get all students from target classes
+    // 1. Fetch students
     const classNames = [
       "CLASS FIVE",
       "CLASS SIX",
@@ -351,165 +287,189 @@ export const sendBulkSMS = async () => {
     const classes = await Class.find({ name: { $in: classNames } });
     const classIds = classes.map((c) => c._id);
     const students = await Student.find({ classId: { $in: classIds } });
-
-    if (students.length === 0) {
+    if (!students.length)
       return { success: false, message: "No students found" };
-    }
 
-    // 2. Prepare precise date ranges for today (12:01 AM to 11:59 PM local time)
-    const todayStart = moment.tz(tz).startOf("day").add(1, "minute").toDate();
-    const todayEnd = moment.tz(tz).endOf("day").subtract(1, "minute").toDate();
-    const studentIds = students.map((s) => s.studentId);
+    // 2. Time calculations
+    const now = moment.tz(tz);
+    const todayStart = now.clone().startOf("day").add(1, "minute");
+    const todayEnd = now.clone().endOf("day").subtract(1, "minute");
+    const entryCutoff = now.clone().set({ hour: 8, minute: 1, second: 0 });
+    const exitCutoff = now.clone().set({ hour: 11, minute: 30, second: 0 });
+    const lateThreshold = now.clone().set({ hour: 7, minute: 31, second: 0 });
 
-    // 3. Fetch relevant biometric transactions
-    const transactions = await BioTimeTransaction.find({
-      empCode: { $in: studentIds },
-      processed: false,
-      punchTime: { $gte: todayStart, $lt: todayEnd },
+    // 3. Get existing reports
+    const existingReports = await SMSReport.find({
+      createdAt: { $gte: todayStart.toDate(), $lte: todayEnd.toDate() },
     });
 
-    // 4. Organize transactions by student
-    const transactionsByStudent = new Map();
-    transactions.forEach((t) => {
-      const entries = transactionsByStudent.get(t.empCode) || [];
-      entries.push(t);
-      transactionsByStudent.set(t.empCode, entries);
-    });
-
-    // 5. Time configuration for message logic
-    const currentTime = moment.tz(tz);
-    const entryCutoff = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 8, minute: 1 });
-    const exitCutoff = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 12, minute: 30 });
-    const lateThreshold = moment
-      .tz(tz)
-      .startOf("day")
-      .set({ hour: 7, minute: 31 });
-
-    // 6. Process student messages
+    // 4. Process students
     const smsBatch = [];
     const failedDetails = [];
-    const processedTransactions = new Set();
+    const processedTransactions = [];
 
     for (const student of students) {
       const { studentId, name, phoneNumber1 } = student;
-      const phoneNumber = phoneNumber1?.trim();
-      const studentName = name?.trim();
+      const phoneNumber = phoneNumber1?.toString().trim();
+      const studentName = name?.toString().trim();
 
+      // Validate contact info
       if (!phoneNumber || !studentName) {
-        failedDetails.push({ studentId, reason: "Missing contact info" });
+        failedDetails.push({
+          studentId: studentId?.toString(),
+          reason: "Missing contact info",
+        });
         continue;
       }
 
-      // Process entry messages
-      const studentTransactions = transactionsByStudent.get(studentId) || [];
-      let entryMessageSent = false;
+      // Check existing messages
+      const hasEntry = existingReports.some((r) =>
+        r.details.some(
+          (d) =>
+            d.studentId === studentId.toString() &&
+            ["entry", "late"].includes(d.type)
+        )
+      );
+      const hasAbsent = existingReports.some((r) =>
+        r.details.some(
+          (d) => d.studentId === studentId.toString() && d.type === "absent"
+        )
+      );
+      const hasExit = existingReports.some((r) =>
+        r.details.some(
+          (d) => d.studentId === studentId.toString() && d.type === "exit"
+        )
+      );
 
-      // Filter and process entry transactions with proper timezone parsing
-      const entryTransactions = studentTransactions.filter((t) => {
-        const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-        return punchTime.isBefore(entryCutoff);
+      // Get transactions
+      const transactions = await BioTimeTransaction.find({
+        empCode: studentId.toString(),
+        processed: false,
+        punchTime: { $gte: todayStart.toDate(), $lt: todayEnd.toDate() },
       });
 
-      if (entryTransactions.length > 0) {
-        const earliestEntry = entryTransactions.reduce((prev, current) => {
-          const prevTime = moment.tz(prev.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-          const currTime = moment.tz(
-            current.punchTime,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
-          return prevTime.isBefore(currTime) ? prev : current;
-        });
-
-        const entryTime = moment.tz(
-          earliestEntry.punchTime,
-          "YYYY-MM-DD HH:mm:ss",
-          tz
+      // Process entry/late
+      if (!hasEntry) {
+        const validEntries = transactions.filter((t) =>
+          moment.tz(t.punchTime, tz).isBefore(entryCutoff)
         );
-        const entryType = entryTime.isBefore(lateThreshold) ? "entry" : "late";
 
-        smsBatch.push({
-          number: phoneNumber,
-          name: studentName,
-          studentId,
-          message: createEntryMessage(
-            studentName,
-            studentId,
-            entryTime,
-            entryType
-          ),
-          type: entryType,
-        });
+        if (validEntries.length > 0) {
+          const earliest = validEntries.reduce((a, b) =>
+            moment.tz(a.punchTime, tz).isBefore(moment.tz(b.punchTime, tz))
+              ? a
+              : b
+          );
 
-        entryTransactions.forEach((t) => processedTransactions.add(t._id));
-        entryMessageSent = true;
-      }
-
-      // Handle absent notifications
-      if (!entryMessageSent && currentTime.isAfter(entryCutoff)) {
-        smsBatch.push({
-          number: phoneNumber,
-          name: studentName,
-          studentId,
-          message: createAbsentMessage(studentName, studentId),
-          type: "absent",
-        });
-      }
-
-      // Process exit messages
-      if (currentTime.isAfter(exitCutoff)) {
-        const exitTransactions = studentTransactions.filter((t) => {
-          const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
-          return punchTime.isSameOrAfter(exitCutoff);
-        });
-
-        if (exitTransactions.length > 0) {
-          const latestExit = exitTransactions.reduce((prev, current) => {
-            const prevTime = moment.tz(
-              prev.punchTime,
-              "YYYY-MM-DD HH:mm:ss",
-              tz
-            );
-            const currTime = moment.tz(
-              current.punchTime,
-              "YYYY-MM-DD HH:mm:ss",
-              tz
-            );
-            return prevTime.isAfter(currTime) ? prev : current;
-          });
+          const entryType = moment
+            .tz(earliest.punchTime, tz)
+            .isBefore(lateThreshold)
+            ? "entry"
+            : "late";
 
           smsBatch.push({
             number: phoneNumber,
             name: studentName,
-            studentId,
+            studentId: studentId.toString(),
+            message: createEntryMessage(
+              studentName,
+              studentId,
+              earliest.punchTime,
+              entryType
+            ),
+            type: entryType,
+          });
+          processedTransactions.push(earliest._id);
+        } else if (now.isAfter(entryCutoff) && !hasAbsent) {
+          smsBatch.push({
+            number: phoneNumber,
+            name: studentName,
+            studentId: studentId.toString(),
+            message: createAbsentMessage(studentName, studentId),
+            type: "absent",
+          });
+        }
+      }
+
+      // Process exit
+      if (!hasExit && now.isAfter(exitCutoff)) {
+        const validExits = transactions.filter((t) =>
+          moment.tz(t.punchTime, tz).isSameOrAfter(exitCutoff)
+        );
+
+        if (validExits.length > 0) {
+          const latest = validExits.reduce((a, b) =>
+            moment.tz(a.punchTime, tz).isAfter(moment.tz(b.punchTime, tz))
+              ? a
+              : b
+          );
+
+          smsBatch.push({
+            number: phoneNumber,
+            name: studentName,
+            studentId: studentId.toString(),
             message: createExitMessage(
               studentName,
               studentId,
-              latestExit.punchTime
+              latest.punchTime
             ),
             type: "exit",
           });
-
-          exitTransactions.forEach((t) => processedTransactions.add(t._id));
+          processedTransactions.push(latest._id);
         }
       }
     }
-    console.log(smsBatch.length);
-    // 7. Send SMS and update records
-    const smsReport = await processSMSBatch(
-      smsBatch,
+
+    // 5. Create SMS report
+    const smsReport = new SMSReport({
+      date: new Date(),
+      total: smsBatch.length + failedDetails.length,
+      successCount: smsBatch.length,
+      failedCount: failedDetails.length,
+      details: smsBatch.map((entry) => ({
+        number: entry.number,
+        name: entry.name,
+        studentId: entry.studentId,
+        message: entry.message,
+        status: "Success",
+        type: entry.type,
+      })),
       failedDetails,
-      processedTransactions
-    );
-    return smsReport;
+    });
+
+    // 6. Send SMS
+    if (smsBatch.length > 0) {
+      try {
+        const apiResponse = await sendSMS(smsBatch);
+        smsReport.apiResponse = apiResponse;
+      } catch (error) {
+        smsReport.apiResponse = { error: error.message };
+        smsReport.successCount = 0;
+        smsReport.failedCount += smsBatch.length;
+      }
+    }
+
+    await smsReport.save();
+
+    // 7. Update transactions
+    if (processedTransactions.length > 0) {
+      await BioTimeTransaction.updateMany(
+        { _id: { $in: processedTransactions } },
+        { $set: { processed: true } }
+      );
+    }
+
+    return {
+      success: true,
+      report: smsReport.toObject(),
+      message: `Processed ${smsBatch.length} SMS, ${failedDetails.length} failures`,
+    };
   } catch (error) {
-    throw new Error(`SMS processing failed: ${error.message}`);
+    console.error("SMS Error:", error);
+    return {
+      success: false,
+      message: `SMS processing failed: ${error.message}`,
+    };
   }
 };
 
@@ -518,10 +478,10 @@ export const sendBulkSMS = async () => {
 const sendSMS = async (smsBatch) => {
   try {
     const smsData = smsBatch.map(({ number, message }) => ({
-      MobNumber: number,
+      MobNumber: `88${number}`,
       Message: message,
     }));
-    console.log(smsData.length);
+    console.log(smsData);
     const response = await axios.post(
       `${process.env.SMS_API_URL}/api/SmsSending/DSMS`,
       {
