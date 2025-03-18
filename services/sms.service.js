@@ -23,10 +23,17 @@ const createExitMessage = (name, id, time) => {
   return `Student Name: ${name} (ID: ${id}),Your exit recorded at ${formattedTime}.\nPRINCIPAL\nH.A.K ACADEMY\nJOINA BAZAR, SREEPUR`;
 };
 
-export const fetchTransactions = async (startTime, endTime, pageSize) => {
+export const fetchTransactions = async () => {
   try {
-    // 1. Fetch from BioTime API
-    console.log(startTime, endTime);
+    const tz = "Asia/Dhaka";
+    const now = moment.tz(tz);
+
+    // Calculate time range for current day
+    const startTime = now.clone().startOf("day").format("YYYY-MM-DD HH:mm");
+    const endTime = now.format("YYYY-MM-DD HH:mm");
+    const pageSize = 2000;
+
+    // Fetch from BioTime API
     const response = await axios.get(process.env.BIOTIME_API_URL, {
       params: {
         start_time: startTime,
@@ -39,32 +46,41 @@ export const fetchTransactions = async (startTime, endTime, pageSize) => {
       },
     });
 
-    // 2. Validate response
+    // Validate response
     if (response.data.code !== 0 || !response.data.data) {
       throw new Error(response.data.msg || "Invalid BioTime response");
     }
-    console.log(response.data.data.length);
-    // 3. Store transactions in DB
-    const bulkOps = response.data.data.map((transaction) => ({
-      updateOne: {
-        filter: { transactionId: transaction.id },
-        update: {
-          $setOnInsert: {
-            transactionId: transaction.id,
-            empCode: transaction.emp_code,
-            punchTime: new Date(transaction.punch_time),
-            rawData: transaction,
+
+    // Process transactions with timezone conversion
+    const bulkOps = response.data.data.map((transaction) => {
+      const punchTime = moment
+        .tz(transaction.punch_time, "YYYY-MM-DD HH:mm:ss", tz)
+        .toDate();
+
+      return {
+        updateOne: {
+          filter: { transactionId: transaction.id },
+          update: {
+            $setOnInsert: {
+              transactionId: transaction.id,
+              empCode: transaction.emp_code,
+              punchTime: punchTime,
+              rawData: transaction,
+              processed: false,
+            },
           },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      };
+    });
 
     await BioTimeTransaction.bulkWrite(bulkOps);
 
-    // 4. Return stored transactions
     return BioTimeTransaction.find({
-      punchTime: { $gte: new Date(startTime), $lte: new Date(endTime) },
+      punchTime: {
+        $gte: moment.tz(tz).startOf("day").toDate(),
+        $lte: now.toDate(),
+      },
     });
   } catch (error) {
     throw new Error(`BioTime Error: ${error.message}`);
@@ -107,6 +123,9 @@ export const sendSingleSMS = async (transactionId) => {
 export const previewBulkSMS = async () => {
   try {
     // 1. Fetch students
+    // 1. Fetch and store today's transactions automatically
+    await fetchTransactions();
+
     const classNames = [
       "CLASS FIVE",
       "CLASS SIX",
@@ -275,6 +294,8 @@ export const previewBulkSMS = async () => {
 
 export const sendBulkSMS = async () => {
   try {
+    // 1. Fetch and store today's transactions automatically
+    await fetchTransactions();
     // 1. Fetch students
     const classNames = [
       "CLASS FIVE",
