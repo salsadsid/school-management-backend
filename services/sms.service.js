@@ -96,7 +96,9 @@ export const fetchTransactions = async (startTime, endTime, pageSize) => {
           $setOnInsert: {
             transactionId: transaction.id,
             empCode: transaction.emp_code,
-            punchTime: new Date(transaction.punch_time),
+            punchTime: new Date(
+              new Date(transaction.punch_time).getTime() - 7200000
+            ),
             rawData: transaction,
           },
         },
