@@ -133,7 +133,7 @@ export const sendSingleSMS = async (transactionId) => {
     if (!student) throw new Error("Student not found");
 
     // 3. Create message
-    const message = `Dear ${student.name},ID: ${student.studentId}, attendance recorded at ${transaction.rawData.punch_time} in H.A.K Academy.`;
+    const message = `Dear ${student.name},ID: ${student.studentId}, attendance recorded at ${transaction.punchTime} in H.A.K Academy.`;
     console.log(message);
     // 4. Send SMS
     await sendSMS([student.phoneNumber1], [message]);
@@ -228,23 +228,15 @@ export const previewBulkSMS = async () => {
 
       // Filter and process entry transactions with proper timezone parsing
       const entryTransactions = studentTransactions.filter((t) => {
-        const punchTime = moment.tz(
-          t.rawData.punch_time,
-          "YYYY-MM-DD HH:mm:ss",
-          tz
-        );
+        const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
         return punchTime.isBefore(entryCutoff);
       });
 
       if (entryTransactions.length > 0) {
         const earliestEntry = entryTransactions.reduce((prev, current) => {
-          const prevTime = moment.tz(
-            prev.rawData.punch_time,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
+          const prevTime = moment.tz(prev.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
           const currTime = moment.tz(
-            current.rawData.punch_time,
+            current.punchTime,
             "YYYY-MM-DD HH:mm:ss",
             tz
           );
@@ -252,7 +244,7 @@ export const previewBulkSMS = async () => {
         });
 
         const entryTime = moment.tz(
-          earliestEntry.rawData.punch_time,
+          earliestEntry.punchTime,
           "YYYY-MM-DD HH:mm:ss",
           tz
         );
@@ -289,23 +281,19 @@ export const previewBulkSMS = async () => {
       // Process exit messages
       if (currentTime.isAfter(exitCutoff)) {
         const exitTransactions = studentTransactions.filter((t) => {
-          const punchTime = moment.tz(
-            t.rawData.punch_time,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
+          const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
           return punchTime.isSameOrAfter(exitCutoff);
         });
 
         if (exitTransactions.length > 0) {
           const latestExit = exitTransactions.reduce((prev, current) => {
             const prevTime = moment.tz(
-              prev.rawData.punch_time,
+              prev.punchTime,
               "YYYY-MM-DD HH:mm:ss",
               tz
             );
             const currTime = moment.tz(
-              current.rawData.punch_time,
+              current.punchTime,
               "YYYY-MM-DD HH:mm:ss",
               tz
             );
@@ -319,7 +307,7 @@ export const previewBulkSMS = async () => {
             message: createExitMessage(
               studentName,
               studentId,
-              latestExit.rawData.punch_time
+              latestExit.punchTime
             ),
             type: "exit",
           });
@@ -424,23 +412,15 @@ export const sendBulkSMS = async () => {
 
       // Filter and process entry transactions with proper timezone parsing
       const entryTransactions = studentTransactions.filter((t) => {
-        const punchTime = moment.tz(
-          t.rawData.punch_time,
-          "YYYY-MM-DD HH:mm:ss",
-          tz
-        );
+        const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
         return punchTime.isBefore(entryCutoff);
       });
 
       if (entryTransactions.length > 0) {
         const earliestEntry = entryTransactions.reduce((prev, current) => {
-          const prevTime = moment.tz(
-            prev.rawData.punch_time,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
+          const prevTime = moment.tz(prev.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
           const currTime = moment.tz(
-            current.rawData.punch_time,
+            current.punchTime,
             "YYYY-MM-DD HH:mm:ss",
             tz
           );
@@ -448,7 +428,7 @@ export const sendBulkSMS = async () => {
         });
 
         const entryTime = moment.tz(
-          earliestEntry.rawData.punch_time,
+          earliestEntry.punchTime,
           "YYYY-MM-DD HH:mm:ss",
           tz
         );
@@ -485,23 +465,19 @@ export const sendBulkSMS = async () => {
       // Process exit messages
       if (currentTime.isAfter(exitCutoff)) {
         const exitTransactions = studentTransactions.filter((t) => {
-          const punchTime = moment.tz(
-            t.rawData.punch_time,
-            "YYYY-MM-DD HH:mm:ss",
-            tz
-          );
+          const punchTime = moment.tz(t.punchTime, "YYYY-MM-DD HH:mm:ss", tz);
           return punchTime.isSameOrAfter(exitCutoff);
         });
 
         if (exitTransactions.length > 0) {
           const latestExit = exitTransactions.reduce((prev, current) => {
             const prevTime = moment.tz(
-              prev.rawData.punch_time,
+              prev.punchTime,
               "YYYY-MM-DD HH:mm:ss",
               tz
             );
             const currTime = moment.tz(
-              current.rawData.punch_time,
+              current.punchTime,
               "YYYY-MM-DD HH:mm:ss",
               tz
             );
@@ -515,7 +491,7 @@ export const sendBulkSMS = async () => {
             message: createExitMessage(
               studentName,
               studentId,
-              latestExit.rawData.punch_time
+              latestExit.punchTime
             ),
             type: "exit",
           });
