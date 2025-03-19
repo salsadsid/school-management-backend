@@ -587,3 +587,88 @@ export const sendTestSMS = async (number, message) => {
     throw error;
   }
 };
+
+export const sendMultiSMS = async (classIds, message, isTest = true) => {
+  try {
+    // 1. Get students from target classes
+    console.log(classIds);
+    const students = await Student.find({ classId: { $in: classIds } });
+    console.log(students.length);
+    if (students.length === 0) {
+      throw new Error("No students found in selected classes");
+    }
+
+    // 2. Prepare mobile numbers
+    const validStudents = students.filter(
+      (s) => s.phoneNumber1?.trim() && s.name?.trim()
+    );
+
+    const invalidStudents = students.filter(
+      (s) => !s.phoneNumber1?.trim() || !s.name?.trim()
+    );
+
+    if (validStudents.length === 0) {
+      throw new Error("No students with valid contact information");
+    }
+
+    // 3. Prepare API request
+    const mobileNumbers = validStudents
+      .map((s) => `88${s.phoneNumber1.trim()}`)
+      .join(",");
+    const apiPayload = {
+      UserName: process.env.SMS_USER,
+      Apikey: process.env.SMS_API_KEY,
+      MobileNumber: mobileNumbers,
+      CampaignId: "null",
+      SenderName: process.env.SMS_SENDER_NAME,
+      TransactionType: "T",
+      Message: message,
+    };
+
+    // 4. Send SMS
+    let apiResponse;
+    try {
+      const response = await axios.post(
+        `${process.env.SMS_API_URL}/api/SmsSending/OneToMany`,
+        apiPayload
+      );
+      apiResponse = response.data;
+    } catch (error) {
+      apiResponse = {
+        error: error.message,
+        statusCode: error.response?.status || 500,
+      };
+      throw error;
+    }
+
+    // 5. Create report
+    const smsReport = new SMSReport({
+      total: students.length,
+      successCount: validStudents.length,
+      failedCount: invalidStudents.length,
+      details: validStudents.map((student) => ({
+        number: student.phoneNumber1.trim(),
+        name: student.name.trim(),
+        studentId: student.studentId,
+        message: message,
+        status: apiResponse.error ? "Failed" : "Success",
+        type: "bulk",
+      })),
+      failedDetails: invalidStudents.map((student) => ({
+        studentId: student.studentId,
+        reason: !student.phoneNumber1?.trim()
+          ? "Missing phone number"
+          : "Missing student name",
+      })),
+      apiResponse,
+      isTest,
+    });
+
+    await smsReport.save();
+    return smsReport;
+  } catch (error) {
+    // Create error report
+
+    throw new Error(`Bulk SMS failed: ${error.message}`);
+  }
+};

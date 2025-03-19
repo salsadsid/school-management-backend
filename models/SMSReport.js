@@ -15,7 +15,7 @@ const smsReportSchema = new mongoose.Schema(
         status: { type: String, enum: ["Success", "Failed"], required: true },
         type: {
           type: String,
-          enum: ["entry", "late", "absent", "exit"],
+          enum: ["entry", "late", "absent", "exit", "bulk"],
           required: true,
         },
       },
