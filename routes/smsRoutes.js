@@ -4,9 +4,11 @@ import {
   fetchTransactions,
   previewBulkSMS,
   sendBulkSMS,
+  sendMultiSMS,
   sendSingleSMS,
   sendTestSMS,
 } from "../services/sms.service.js";
+import { tokenVerification } from "../middlewares/tokenVerification.js";
 
 const router = express.Router();
 
@@ -64,6 +66,20 @@ router.post("/test", async (req, res) => {
   try {
     const { number, message } = req.body;
     const report = await sendTestSMS(number, message);
+    res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      report: error.report,
+    });
+  }
+});
+
+router.post("/send-multi", tokenVerification, async (req, res) => {
+  try {
+    const { classIds, message, isTest } = req.body;
+    const report = await sendMultiSMS(classIds, message, isTest);
     res.json({ success: true, report });
   } catch (error) {
     res.status(500).json({
