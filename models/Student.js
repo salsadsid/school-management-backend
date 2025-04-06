@@ -62,6 +62,15 @@ const studentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  imageCloudinary: {
+    type: String,
+    default:
+      "https://res.cloudinary.com/demo/image/upload/v1624397432/default_avatar.png",
+  },
+  imageLocal: {
+    type: String,
+    default: "/uploads/students/default-avatar.png",
+  },
   // academicRecords: [
   //   {
   //     year: { type: Number, required: true },
