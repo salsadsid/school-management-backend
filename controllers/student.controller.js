@@ -1,3 +1,4 @@
+import configureCloudinary from "../config/cloudinary.js";
 import biotimeService from "../services/biotime.service.js";
 import { addStudentToClassService } from "../services/class.service.js";
 import { addStudentToSectionService } from "../services/section.service.js";
@@ -9,12 +10,20 @@ import {
   updateAStudentService,
 } from "../services/student.service.js";
 
+// Initialize Cloudinary at the top of your file
+import fs from "fs";
+
+const cloudinary = configureCloudinary();
+
 const createStudent = async (req, res, next) => {
   try {
     const { classId, section } = req.body;
-    // console.log(name, studentId, password, classId);
-    // console.log(req.body);
-    const newStudent = await createUserAndStudentService(req.body);
+    const studentData = {
+      ...req.body,
+      imageLocal: req.uploadData?.localPath || "",
+      imageCloudinary: req.uploadData?.cloudinaryUrl || "",
+    };
+    const newStudent = await createUserAndStudentService(studentData);
     // console.log(newStudent);
     const updatedClass = await addStudentToClassService(
       newStudent.student._id,
@@ -32,6 +41,14 @@ const createStudent = async (req, res, next) => {
       section: updatedSection,
     });
   } catch (error) {
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+      if (req.uploadData?.cloudinaryUrl) {
+        await cloudinary.uploader.destroy(
+          req.uploadData.cloudinaryUrl.split("/").pop().split(".")[0]
+        );
+      }
+    }
     next(error);
   }
 };

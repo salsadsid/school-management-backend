@@ -58,11 +58,19 @@ export const getStudentByIdService = async (studentId) => {
 
 export const updateAStudentService = async (studentId, studentData) => {
   try {
+    console.log(studentId, studentData);
     const student = await Student.findOneAndUpdate(
       { _id: studentId },
       studentData,
       { new: true }
-    );
+    ).populate("classId section");
+
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    console.log(student.classId, "classId");
+
     return student;
   } catch (error) {
     throw new Error("Error updating student");
