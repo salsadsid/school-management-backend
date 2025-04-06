@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+      body {
+        margin: 0;
+        font-family: Arial;
+      }
+      .page {
+        width: 297mm;
+        height: 210mm;
+        padding: 10mm;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5mm;
+        page-break-after: always;
+        position: relative;
+      }
+      .admit-card {
+        width: calc((100% - 10mm) / 3);
+        height: calc((100% - 10mm) / 1);
+        border: 1px solid #000;
+        padding: 3mm;
+        box-sizing: border-box;
+        position: relative;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4mm;
+      }
+      .school-info {
+        text-align: center;
+        flex-grow: 1;
+      }
+      .student-photo {
+        width: 30mm;
+        height: 40mm;
+        border: 1px solid #ccc;
+      }
+      .instructions {
+        font-size: 9pt;
+        margin-top: 3mm;
+      }
+      .signature-section {
+        position: absolute;
+        bottom: 5mm;
+        right: 5mm;
+      }
+    </style>
+  </head>
+  <body>
+    <% studentChunks.forEach((chunk) => { %>
+    <div class="page">
+      <% chunk.forEach((student) => { %>
+      <div class="admit-card">
+        <div class="header">
+          <div class="school-info">
+            <h2><%= schoolData.name %></h2>
+            <p><%= schoolData.address %></p>
+            <h3>ADMIT CARD</h3>
+            <p><strong><%= examName %></strong></p>
+          </div>
+        </div>
+
+        <div class="student-info">
+          <p>Name: <%= student.name %></p>
+          <p>Student ID: <%= student.studentId %></p>
+          <p>Class: <%= className %></p>
+          <p>
+            Roll:
+            <!-- Add roll number field if available -->
+          </p>
+        </div>
+
+        <div class="instructions">
+          <% admitCardData.instructions.forEach((instruction) => { %>
+          <p>• <%= instruction %></p>
+          <% }); %>
+        </div>
+
+        <div class="signature-section">
+          <p>Date: <%= new Date().toLocaleDateString('en-GB') %></p>
+          <p>Principal's Signature</p>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <% }); %>
+  </body>
+</html>
