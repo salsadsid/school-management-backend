@@ -49,7 +49,7 @@ export const generateAdmitCards = async (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=admit-cards.pdf"
+      `attachment; filename=admit-cards-${className?.name}.pdf`
     );
     console.log(Buffer.isBuffer(pdfBuffer)); // should be true
     console.log(pdfBuffer.length); // should be > 0
