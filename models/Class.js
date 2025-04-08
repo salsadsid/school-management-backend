@@ -18,12 +18,12 @@ const classSchema = new mongoose.Schema(
         ref: "Student", // List of students in this class
       },
     ],
-    subjects: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subject", // Subjects taught in this class
-      },
-    ],
+    // subjects: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "Subject", // Subjects taught in this class
+    //   },
+    // ],
     sections: [
       {
         type: mongoose.Schema.Types.ObjectId,

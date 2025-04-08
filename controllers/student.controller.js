@@ -1,4 +1,5 @@
 import configureCloudinary from "../config/cloudinary.js";
+import Class from "../models/Class.js";
 import biotimeService from "../services/biotime.service.js";
 import { addStudentToClassService } from "../services/class.service.js";
 import { addStudentToSectionService } from "../services/section.service.js";
@@ -105,7 +106,16 @@ const deleteStudent = async (req, res, next) => {
     if (!deletedStudent) {
       return res.status(404).json({ message: "Student not found" });
     }
-    res.status(200).json(deletedStudent);
+    console.log(deletedStudent, "deletedStudent");
+    await Class.updateMany(
+      { students: deletedStudent._id },
+      { $pull: { students: deletedStudent._id } }
+    );
+
+    res.status(200).json({
+      message: "Student deleted and removed from class",
+      student: deletedStudent,
+    });
   } catch (error) {
     next(error);
   }
