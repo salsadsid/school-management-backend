@@ -72,7 +72,28 @@ export const generateClassAdmitCards = async (students, examName, classId) => {
       for (let j = 0; j < group.length; j++) {
         const student = group[j];
         const yPos = startYs[j];
+        // Load student image
+        let studentImage;
+        if (student.imageCloudinary || student.imageLocal) {
+          try {
+            let imageBytes;
+            if (student.imageCloudinary) {
+              const response = await fetch(student.imageCloudinary);
+              imageBytes = await response.arrayBuffer();
+            } else {
+              imageBytes = fs.readFileSync(student.imageLocal);
+            }
 
+            // Try embedding as JPG or PNG
+            try {
+              studentImage = await pdfDoc.embedJpg(imageBytes);
+            } catch (e) {
+              studentImage = await pdfDoc.embedPng(imageBytes);
+            }
+          } catch (err) {
+            console.error("Error loading student image:", err);
+          }
+        }
         // Card Container
         page.drawRectangle({
           x: leftMargin,
@@ -116,6 +137,26 @@ export const generateClassAdmitCards = async (students, examName, classId) => {
           height: 50,
         });
 
+        // Student Image (right side of header)
+        if (studentImage) {
+          page.drawRectangle({
+            x: leftMargin + cardWidth - 80,
+            y: yPos - 80,
+            width: 70,
+            height: 70,
+            borderColor: rgb(0.2, 0.4, 0.6),
+            borderWidth: 5,
+            color: rgb(0.98, 0.98, 0.98), // Background color
+          });
+
+          // Then draw the image on top
+          page.drawImage(studentImage, {
+            x: leftMargin + cardWidth - 80,
+            y: yPos - 80,
+            width: 70,
+            height: 70,
+          });
+        }
         // Student Information
         const studentInfo = [
           ["পরীক্ষার নাম:", examName],

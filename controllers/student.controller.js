@@ -87,7 +87,11 @@ const getStudentById = async (req, res, next) => {
 const updateStudent = async (req, res, next) => {
   try {
     const { studentId } = req.params;
-    const updateData = req.body;
+    const updateData = {
+      ...req.body,
+      imageLocal: req.uploadData?.localPath || "",
+      imageCloudinary: req.uploadData?.cloudinaryUrl || "",
+    };
     console.log(studentId, updateData);
     const updatedStudent = await updateAStudentService(studentId, updateData);
     if (!updatedStudent) {
@@ -95,6 +99,14 @@ const updateStudent = async (req, res, next) => {
     }
     res.status(200).json(updatedStudent);
   } catch (error) {
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+      if (req.uploadData?.cloudinaryUrl) {
+        await cloudinary.uploader.destroy(
+          req.uploadData.cloudinaryUrl.split("/").pop().split(".")[0]
+        );
+      }
+    }
     next(error);
   }
 };
