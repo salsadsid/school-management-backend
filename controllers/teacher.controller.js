@@ -24,7 +24,6 @@ export const createTeacher = async (req, res) => {
 export const createUserAndTeacher = async (req, res) => {
   try {
     const teacherData = req.body;
-    console.log(teacherData);
     const newTeacher = await teacherService.createUserAndTeacherService(
       teacherData
     );

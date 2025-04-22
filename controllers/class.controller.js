@@ -8,7 +8,6 @@ import {
 const createNewClass = async (req, res, next) => {
   try {
     const { name, teacher } = req.body;
-    // console.log(name, teacherId);
     const newClass = await createNewClassService({
       name,
       teacher,

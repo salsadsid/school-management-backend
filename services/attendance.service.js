@@ -3,7 +3,6 @@ import Attendance from "../models/Attendance.js";
 class AttendanceService {
   // Create new attendance
   async createAttendance(data) {
-    // console.log(data, "from service");
     const attendance = new Attendance(data);
     return await attendance.save();
   }

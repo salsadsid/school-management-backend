@@ -25,7 +25,6 @@ const createStudent = async (req, res, next) => {
       imageCloudinary: req.uploadData?.cloudinaryUrl || "",
     };
     const newStudent = await createUserAndStudentService(studentData);
-    // console.log(newStudent);
     const updatedClass = await addStudentToClassService(
       newStudent.student._id,
       classId
@@ -67,7 +66,6 @@ const getAllStudents = async (req, res, next) => {
 const getStudentById = async (req, res, next) => {
   try {
     const { studentId, password } = req.params;
-    // console.log(studentId, password);
     const student = await getStudentByIdService(studentId);
 
     if (!student) {
@@ -92,7 +90,6 @@ const updateStudent = async (req, res, next) => {
       imageLocal: req.uploadData?.localPath || "",
       imageCloudinary: req.uploadData?.cloudinaryUrl || "",
     };
-    console.log(studentId, updateData);
     const updatedStudent = await updateAStudentService(studentId, updateData);
     if (!updatedStudent) {
       return res.status(404).json({ message: "Student not found" });
@@ -118,7 +115,6 @@ const deleteStudent = async (req, res, next) => {
     if (!deletedStudent) {
       return res.status(404).json({ message: "Student not found" });
     }
-    console.log(deletedStudent, "deletedStudent");
     await Class.updateMany(
       { students: deletedStudent._id },
       { $pull: { students: deletedStudent._id } }
@@ -143,7 +139,6 @@ const getStudentsPhoneNumbers = async (req, res, next) => {
         message: "Both start_time and end_time are required",
       });
     }
-    console.log("getStudentsPhoneNumbers", start_time);
     // Get phone numbers
     const phoneNumbers = await biotimeService.getPhoneNumbersByTimeRange(
       start_time,

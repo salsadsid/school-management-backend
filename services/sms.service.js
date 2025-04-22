@@ -91,7 +91,6 @@ export const fetchTransactions = async () => {
 export const sendSingleSMS = async (transactionId) => {
   try {
     // 1. Get transaction from local DB
-    console.log(transactionId);
     const transaction = await BioTimeTransaction.findOne({ transactionId });
     if (!transaction) throw new Error("Transaction not found");
     if (transaction.processed) throw new Error("Already processed");
@@ -104,7 +103,6 @@ export const sendSingleSMS = async (transactionId) => {
 
     // 3. Create message
     const message = `Dear ${student.name},ID: ${student.studentId}, attendance recorded at ${transaction.punchTime} in H.A.K Academy.`;
-    console.log(message);
     // 4. Send SMS
     await sendSMS([student.phoneNumber1], [message]);
 
@@ -502,7 +500,6 @@ const sendSMS = async (smsBatch) => {
       MobNumber: `88${number}`,
       Message: message,
     }));
-    console.log(smsData);
     const response = await axios.post(
       `${process.env.SMS_API_URL}/api/SmsSending/DSMS`,
       {
@@ -514,7 +511,6 @@ const sendSMS = async (smsBatch) => {
       }
     );
 
-    console.log(response.data);
     return {
       statusCode: response.data.statusCode,
       status: response.data.status,
@@ -591,9 +587,7 @@ export const sendTestSMS = async (number, message) => {
 export const sendMultiSMS = async (classIds, message, isTest = true) => {
   try {
     // 1. Get students from target classes
-    console.log(classIds);
     const students = await Student.find({ classId: { $in: classIds } });
-    console.log(students.length);
     if (students.length === 0) {
       throw new Error("No students found in selected classes");
     }
