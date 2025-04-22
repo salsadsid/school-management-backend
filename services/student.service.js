@@ -38,7 +38,7 @@ export const getAllStudentsService = async ({
     if (section) filter.section = section;
 
     // Fetch students based on the filter
-    const students = await Student.find(filter).populate("classId section");
+    const students = await Student.find(filter).populate("classId");
 
     return students;
   } catch (error) {
