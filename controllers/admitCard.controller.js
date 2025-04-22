@@ -40,7 +40,7 @@ export const generateAdmitCards = async (req, res) => {
         message: "No students found for the provided class ID",
       });
     }
-    console.log(className, "className");
+
     const pdfBuffer = await generateClassAdmitCards(
       students,
       examName,
@@ -51,8 +51,6 @@ export const generateAdmitCards = async (req, res) => {
       "Content-Disposition",
       `attachment; filename=admit-cards-${className?.name}.pdf`
     );
-    console.log(Buffer.isBuffer(pdfBuffer)); // should be true
-    console.log(pdfBuffer.length); // should be > 0
     res.send(Buffer.from(pdfBuffer));
   } catch (error) {
     console.error("Controller Error:", error);

@@ -5,7 +5,6 @@ class BioTimeService {
   async getPhoneNumbersByTimeRange(startTime, endTime) {
     try {
       // 1. Get BioTime transactions
-      console.log("BioTimeService getPhoneNumbersByTimeRange");
       const bioTimeResponse = await axios.get(
         "http://173.249.28.63/iclock/api/transactions/",
         {
@@ -31,7 +30,6 @@ class BioTimeService {
       const empCodes = [
         ...new Set(transactions.map((t) => Number(t.emp_code))),
       ];
-      console.log("BioTimeService empCodes", empCodes);
       // 4. Find matching students
       const students = await Student.find({
         studentId: { $in: empCodes },
