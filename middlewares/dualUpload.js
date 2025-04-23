@@ -25,7 +25,7 @@ const dualUpload = (fieldName) => {
 
         // Attach paths to request object
         req.uploadData = {
-          localPath: `/uploads/students/${req.file.filename}`,
+          localPath: `uploads/students/${req.file.filename}`,
           cloudinaryUrl: cloudinaryResult.secure_url,
         };
 

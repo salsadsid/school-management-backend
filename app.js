@@ -22,6 +22,8 @@ app.get("/", (req, res) => {
   res.send("School Management is Running");
 });
 
+app.use("/api/v1/uploads/students", express.static("uploads/students"));
+
 app.use("/api/v1", authRoutes);
 app.use("/api/v1/class", classRoutes);
 
