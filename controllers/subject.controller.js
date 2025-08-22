@@ -1,7 +1,7 @@
 import * as subjectService from "../services/subject.service.js";
 
 // Get all subjects
-export const getAllSubjects = async (req, res) => {
+const getAllSubjects = async (req, res) => {
   try {
     const subjects = await subjectService.getAllSubjects();
     res.status(200).json(subjects);
@@ -11,7 +11,7 @@ export const getAllSubjects = async (req, res) => {
 };
 
 // Create a new subject
-export const createSubject = async (req, res) => {
+const createSubject = async (req, res) => {
   try {
     const subjectData = req.body;
     const newSubject = await subjectService.createSubject(subjectData);
@@ -22,7 +22,7 @@ export const createSubject = async (req, res) => {
 };
 
 // Update a subject
-export const updateSubject = async (req, res) => {
+const updateSubject = async (req, res) => {
   try {
     const subjectId = req.params.id;
     const updatedSubject = await subjectService.updateSubject(
@@ -36,7 +36,7 @@ export const updateSubject = async (req, res) => {
 };
 
 // Delete a subject
-export const deleteSubject = async (req, res) => {
+const deleteSubject = async (req, res) => {
   try {
     const subjectId = req.params.id;
     await subjectService.deleteSubject(subjectId);
@@ -45,3 +45,5 @@ export const deleteSubject = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+export default { createSubject, deleteSubject, getAllSubjects, updateSubject };

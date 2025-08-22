@@ -11,6 +11,7 @@ import classRoutes from "./routes/classRoutes.js";
 import sectionRoutes from "./routes/sectionRoutes.js";
 import smsRoutes from "./routes/smsRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
+import subjectRoutes from "./routes/subjectRoutes.js";
 import teacherRoutes from "./routes/teacherRoutes.js";
 const app = express();
 dotenv.config();
@@ -25,9 +26,11 @@ app.get("/", (req, res) => {
 app.use("/api/v1/uploads/students", express.static("uploads/students"));
 
 app.use("/api/v1", authRoutes);
+
 app.use("/api/v1/class", classRoutes);
 
 app.use("/api/v1/student", studentRoutes);
+
 app.use("/api/v1/teacher", teacherRoutes);
 
 app.use("/api/v1/admission", admissionInfoRoutes);
@@ -39,6 +42,8 @@ app.use("/api/v1/attendance", attendanceRoutes);
 app.use("/api/v1/sms", smsRoutes);
 
 app.use("/api/v1/admit-card", admitCardRoutes);
+
+app.use("/api/v1/subject", subjectRoutes);
 
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
