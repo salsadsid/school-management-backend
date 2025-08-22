@@ -31,7 +31,6 @@ export const updateSection = async (sectionId, updateData) => {
 
 export const addStudentToSectionService = async (studentId, sectionId) => {
   try {
-    // console.log(sectionId, studentId);
     // Add student to the section
     await Section.updateOne(
       { _id: sectionId },

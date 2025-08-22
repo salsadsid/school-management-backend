@@ -53,7 +53,6 @@ const login = async (req, res, next) => {
     } else {
       user = await getUserByEmail(email);
     }
-    console.log(user);
     if (!user || !(await user.matchPassword(password))) {
       return res
         .status(401)
@@ -68,7 +67,6 @@ const login = async (req, res, next) => {
 
 const verifyToken = async (req, res, next) => {
   try {
-    // console.log(req.user);
     const email = req.user.email;
     const user = await getUserByEmailAndDetails(email);
     if (!user) {

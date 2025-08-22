@@ -33,20 +33,20 @@ const teacherSchema = new mongoose.Schema({
     },
   ],
 
-  subjects: [
-    {
-      subjectId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subject", // Link to Subject schema
-      },
-      classes: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Class", // Link to AcademicClass schema
-        },
-      ],
-    },
-  ],
+  // subjects: [
+  //   {
+  //     subjectId: {
+  //       type: mongoose.Schema.Types.ObjectId,
+  //       ref: "Subject", // Link to Subject schema
+  //     },
+  //     classes: [
+  //       {
+  //         type: mongoose.Schema.Types.ObjectId,
+  //         ref: "Class", // Link to AcademicClass schema
+  //       },
+  //     ],
+  //   },
+  // ],
   designation: { type: String }, // e.g., "Senior Teacher"
   contactNumber: { type: String },
   address: { type: String }, // Optional field

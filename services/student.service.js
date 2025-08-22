@@ -38,7 +38,7 @@ export const getAllStudentsService = async ({
     if (section) filter.section = section;
 
     // Fetch students based on the filter
-    const students = await Student.find(filter).populate("classId section");
+    const students = await Student.find(filter).populate("classId");
 
     return students;
   } catch (error) {
@@ -48,7 +48,6 @@ export const getAllStudentsService = async ({
 
 export const getStudentByIdService = async (studentId) => {
   try {
-    console.log(studentId);
     const student = await Student.findOne({ _id: studentId });
     return student;
   } catch (error) {
@@ -62,7 +61,12 @@ export const updateAStudentService = async (studentId, studentData) => {
       { _id: studentId },
       studentData,
       { new: true }
-    );
+    ).populate("classId section");
+
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
     return student;
   } catch (error) {
     throw new Error("Error updating student");
